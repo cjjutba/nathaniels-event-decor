@@ -57,7 +57,7 @@ import wedding2Portfolio from '@/assets/portfolio-wedding-2.jpg';
 import teamPhoto from '@/assets/team-photo.jpg';
 
 const App = () => {
-  const [currentPage, setCurrentPage] = useState('/');
+  const [currentPage, setCurrentPage] = useState(window.location.pathname);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [portfolioFilter, setPortfolioFilter] = useState('All');
   const [contactForm, setContactForm] = useState({
