@@ -1,0 +1,52 @@
+import React from 'react';
+import { AdminHeader } from '@/components/admin/AdminHeader';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
+
+interface AdminLayoutProps {
+  children: React.ReactNode;
+  currentPage: string;
+  isAdminMenuOpen: boolean;
+  setIsAdminMenuOpen: (open: boolean) => void;
+  navigate: (path: string) => void;
+  handleAdminLogout: () => void;
+}
+
+export const AdminLayout: React.FC<AdminLayoutProps> = ({
+  children,
+  currentPage,
+  isAdminMenuOpen,
+  setIsAdminMenuOpen,
+  navigate,
+  handleAdminLogout,
+}) => {
+  return (
+    <div className="min-h-screen bg-background">
+      <AdminHeader 
+        isAdminMenuOpen={isAdminMenuOpen}
+        setIsAdminMenuOpen={setIsAdminMenuOpen}
+        navigate={navigate}
+        handleAdminLogout={handleAdminLogout}
+      />
+      <div className="flex">
+        <AdminSidebar 
+          currentPage={currentPage}
+          isAdminMenuOpen={isAdminMenuOpen}
+          navigate={navigate}
+        />
+        <main className="flex-1 md:ml-64 p-6">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+      
+      {/* Mobile overlay */}
+      {isAdminMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setIsAdminMenuOpen(false)}
+        />
+      )}
+    </div>
+  );
+};

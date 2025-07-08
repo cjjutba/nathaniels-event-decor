@@ -3,7 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { AppComponent } from "./components/App";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -15,17 +15,17 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/about" element={<Index />} />
-          <Route path="/services" element={<Index />} />
-          <Route path="/services/*" element={<Index />} />
-          <Route path="/portfolio" element={<Index />} />
-          <Route path="/contact" element={<Index />} />
-          <Route path="/login" element={<Index />} />
-          <Route path="/signup" element={<Index />} />
-          <Route path="/client/*" element={<Index />} />
-          <Route path="/admin" element={<Index />} />
-          <Route path="/admin/*" element={<Index />} />
+          <Route path="/" element={<AppComponent />} />
+          <Route path="/about" element={<AppComponent />} />
+          <Route path="/services" element={<AppComponent />} />
+          <Route path="/services/*" element={<AppComponent />} />
+          <Route path="/portfolio" element={<AppComponent />} />
+          <Route path="/contact" element={<AppComponent />} />
+          <Route path="/login" element={<AppComponent />} />
+          <Route path="/signup" element={<AppComponent />} />
+          <Route path="/client/*" element={<AppComponent />} />
+          <Route path="/admin" element={<AppComponent />} />
+          <Route path="/admin/*" element={<AppComponent />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
