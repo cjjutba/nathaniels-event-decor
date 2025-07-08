@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   isAdminAuthenticated: boolean;
+  isSessionLoading: boolean;
   adminLoginForm: {
     username: string;
     password: string;
@@ -29,6 +30,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [adminLoginForm, setAdminLoginForm] = useState({
     username: '',
     password: ''
@@ -37,11 +39,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
-  // Check for existing admin session on mount
+  // Check for existing admin session on mount and set up session monitoring
   useEffect(() => {
-    const isAuthenticated = adminAuth.checkSession();
-    setIsAdminAuthenticated(isAuthenticated);
-  }, []);
+    const checkAndRestoreSession = () => {
+      const isAuthenticated = adminAuth.checkSession();
+      setIsAdminAuthenticated(isAuthenticated);
+      setIsSessionLoading(false);
+
+      if (isAuthenticated) {
+        // Extend session on activity
+        adminAuth.extendSession();
+        console.log('Admin session restored and extended');
+      }
+    };
+
+    // Initial session check
+    checkAndRestoreSession();
+
+    // Set up periodic session validation (every 5 minutes)
+    const sessionCheckInterval = setInterval(() => {
+      const isAuthenticated = adminAuth.checkSession();
+      if (isAuthenticated !== isAdminAuthenticated) {
+        setIsAdminAuthenticated(isAuthenticated);
+        if (!isAuthenticated) {
+          toast({
+            title: "Session Expired",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
+          });
+        }
+      }
+    }, 5 * 60 * 1000); // Check every 5 minutes
+
+    // Set up activity listener to extend session
+    const handleUserActivity = () => {
+      if (adminAuth.checkSession()) {
+        adminAuth.extendSession();
+      }
+    };
+
+    // Listen for user activity to extend session
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    activityEvents.forEach(event => {
+      document.addEventListener(event, handleUserActivity, { passive: true });
+    });
+
+    // Cleanup
+    return () => {
+      clearInterval(sessionCheckInterval);
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, handleUserActivity);
+      });
+    };
+  }, [isAdminAuthenticated, toast]);
 
   const handleAdminLogin = (username: string, password: string, navigate: (path: string) => void) => {
     console.log('Login attempt:', { username, password });
@@ -80,6 +130,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value: AuthContextType = {
     isAdminAuthenticated,
+    isSessionLoading,
     adminLoginForm,
     setAdminLoginForm,
     adminLoginError,

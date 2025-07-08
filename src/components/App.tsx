@@ -39,23 +39,47 @@ export const AppComponent: React.FC = () => {
 
   const {
     isAdminAuthenticated,
+    isSessionLoading,
     handleAdminLogout,
   } = useAuth();
 
-  // Route protection for admin dashboard
+  // Route protection for admin dashboard with session loading consideration
   useEffect(() => {
+    // Don't redirect while session is still loading
+    if (isSessionLoading) return;
+
+    // If user is on admin routes but not authenticated, redirect to login
     if (currentPage.startsWith('/admin/dashboard') && !isAdminAuthenticated) {
+      console.log('Redirecting to admin login - not authenticated');
       navigate(PATHS.ADMIN_LOGIN);
     }
-  }, [currentPage, isAdminAuthenticated, navigate]);
+
+    // If user is on admin login page but already authenticated, redirect to dashboard
+    if (currentPage === PATHS.ADMIN_LOGIN && isAdminAuthenticated) {
+      console.log('Redirecting to dashboard - already authenticated');
+      navigate(PATHS.ADMIN_DASHBOARD);
+    }
+  }, [currentPage, isAdminAuthenticated, isSessionLoading, navigate]);
 
   // Render the appropriate page content
   const renderPageContent = () => {
+    // Show loading state while checking session
+    if (isSessionLoading && currentPage.startsWith('/admin')) {
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Checking authentication...</p>
+          </div>
+        </div>
+      );
+    }
+
     // Admin routes handling
     if (currentPage === PATHS.ADMIN_LOGIN) {
       return <AdminLoginPage navigate={navigate} />;
     }
-    
+
     if (currentPage.startsWith('/admin/dashboard')) {
       if (!isAdminAuthenticated) {
         return <AdminLoginPage navigate={navigate} />;
