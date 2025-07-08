@@ -14,7 +14,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { PATHS, COMPANY_INFO } from '@/lib/constants';
-import { useSidebar } from '@/hooks/useSidebar';
+import { useAdminSidebar } from '@/hooks/useSidebar';
 
 interface AdminSidebarProps {
   currentPage: string;
@@ -27,7 +27,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   isAdminMenuOpen,
   navigate,
 }) => {
-  const { isCollapsed, toggleSidebar } = useSidebar();
+  const { isCollapsed, toggleSidebar } = useAdminSidebar();
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('AdminSidebar: isCollapsed changed to', isCollapsed);
+  }, [isCollapsed]);
 
   const adminNavItems = [
     { path: PATHS.ADMIN_DASHBOARD, icon: LayoutDashboard, label: 'Dashboard' },
@@ -40,11 +45,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     { path: PATHS.ADMIN_PROFILE, icon: CircleUser, label: 'Profile' },
   ];
 
-  const sidebarWidth = isCollapsed ? 'w-16' : 'w-64';
-
   const NavItem: React.FC<{ item: typeof adminNavItems[0] }> = ({ item }) => {
     const isActive = currentPage === item.path;
-
+    
     const buttonContent = (
       <Button
         variant="ghost"
@@ -59,7 +62,9 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       >
         <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'} flex-shrink-0`} />
         {!isCollapsed && (
-          <span className="font-medium text-sm truncate">{item.label}</span>
+          <span className="font-medium text-sm truncate opacity-100 transition-opacity duration-200">
+            {item.label}
+          </span>
         )}
       </Button>
     );
@@ -83,26 +88,39 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   };
 
   return (
-    <aside className={`bg-background border-r border-border ${sidebarWidth} fixed inset-y-0 left-0 z-50 transform ${
-      isAdminMenuOpen ? 'translate-x-0' : '-translate-x-full'
-    } md:translate-x-0 transition-all duration-300 ease-in-out flex flex-col shadow-sm`}>
+    <aside
+      className={`bg-background border-r border-border fixed inset-y-0 left-0 z-50 transform ${
+        isAdminMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0 transition-all duration-300 ease-in-out flex flex-col shadow-sm`}
+      style={{
+        width: isCollapsed ? '4rem' : '16rem',
+        // Force hardware acceleration for smoother transitions
+        willChange: 'width, transform',
+        backfaceVisibility: 'hidden',
+        transform: 'translateZ(0)',
+      }}
+    >
+      
       {/* Header */}
       <div className={`p-4 border-b border-border ${isCollapsed ? 'px-2' : ''}`}>
         {!isCollapsed ? (
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-foreground">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-lg font-bold text-foreground truncate">
                 <span className="text-primary">Admin</span>
               </h2>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1 truncate">
                 {COMPANY_INFO.NAME}
               </p>
             </div>
             <Button
               variant="ghost"
               size="sm"
-              onClick={toggleSidebar}
-              className="h-8 w-8 p-0 hover:bg-muted"
+              onClick={() => {
+                console.log('Collapse button clicked');
+                toggleSidebar();
+              }}
+              className="h-8 w-8 p-0 hover:bg-muted flex-shrink-0 ml-2"
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -112,7 +130,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              onClick={toggleSidebar}
+              onClick={() => {
+                console.log('Expand button clicked');
+                toggleSidebar();
+              }}
               className="h-8 w-8 p-0 hover:bg-muted"
             >
               <ChevronRight className="h-4 w-4" />
@@ -134,7 +155,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
       <div className={`p-4 border-t border-border ${isCollapsed ? 'px-2' : ''}`}>
         {!isCollapsed ? (
           <div className="text-center">
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               © 2024 {COMPANY_INFO.NAME}
             </p>
           </div>

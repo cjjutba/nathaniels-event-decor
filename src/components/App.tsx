@@ -3,6 +3,7 @@ import { useNavigation } from '@/hooks/useNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { ClientLayout } from '@/layouts/ClientLayout';
 import { AdminLayout } from '@/layouts/AdminLayout';
+import { AdminSidebarProvider } from '@/hooks/useSidebar';
 import { PATHS } from '@/lib/constants';
 
 // Client Pages
@@ -142,15 +143,17 @@ export const AppComponent: React.FC = () => {
       }
       
       return (
-        <AdminLayout
-          currentPage={currentPage}
-          isAdminMenuOpen={isAdminMenuOpen}
-          setIsAdminMenuOpen={setIsAdminMenuOpen}
-          navigate={navigate}
-          handleAdminLogout={() => handleAdminLogout(navigate)}
-        >
-          {renderPageContent()}
-        </AdminLayout>
+        <AdminSidebarProvider>
+          <AdminLayout
+            currentPage={currentPage}
+            isAdminMenuOpen={isAdminMenuOpen}
+            setIsAdminMenuOpen={setIsAdminMenuOpen}
+            navigate={navigate}
+            handleAdminLogout={() => handleAdminLogout(navigate)}
+          >
+            {renderPageContent()}
+          </AdminLayout>
+        </AdminSidebarProvider>
       );
     }
     

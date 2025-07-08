@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +16,15 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { PATHS } from '@/lib/constants';
+import { RecentActivitiesModal } from '@/components/admin/RecentActivitiesModal';
 
 interface AdminDashboardPageProps {
   navigate: (path: string) => void;
 }
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate }) => {
+  const [isActivitiesModalOpen, setIsActivitiesModalOpen] = useState(false);
+
   const stats = [
     {
       icon: ClipboardList,
@@ -198,7 +201,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
               <CardTitle className="text-xl">Recent Activity</CardTitle>
               <CardDescription>Latest updates and actions across your business</CardDescription>
             </div>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsActivitiesModalOpen(true)}
+            >
               <Eye className="h-4 w-4 mr-2" />
               View All
             </Button>
@@ -293,6 +300,11 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
           </div>
         </CardContent>
       </Card>
+
+      <RecentActivitiesModal
+        isOpen={isActivitiesModalOpen}
+        onClose={() => setIsActivitiesModalOpen(false)}
+      />
     </div>
   );
 };

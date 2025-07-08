@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { AdminHeader } from '@/components/admin/AdminHeader';
 import { AdminSidebar } from '@/components/admin/AdminSidebar';
-import { useSidebar } from '@/hooks/useSidebar';
+import { useAdminSidebar } from '@/hooks/useSidebar';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -20,18 +20,44 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
   navigate,
   handleAdminLogout,
 }) => {
-  const { isCollapsed } = useSidebar();
+  const { isCollapsed, isTransitioning } = useAdminSidebar();
+  const [mounted, setMounted] = useState(false);
+
+  // Ensure component is mounted to prevent hydration issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Debug logging to track state changes
+  useEffect(() => {
+    if (mounted) {
+      console.log('AdminLayout: Sidebar state changed', { isCollapsed, isTransitioning });
+    }
+  }, [isCollapsed, isTransitioning, mounted]);
+
+  // Don't render until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return null;
+  }
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-muted/30 relative">
       <AdminSidebar
         currentPage={currentPage}
         isAdminMenuOpen={isAdminMenuOpen}
         navigate={navigate}
       />
 
-      {/* Main content area with responsive margin */}
-      <div className={`transition-all duration-300 ease-in-out ml-0 ${isCollapsed ? 'md:ml-16' : 'md:ml-64'}`}>
+      {/* Main content wrapper with dynamic margin and smooth transitions */}
+      <div
+        className="transition-all duration-300 ease-in-out"
+        style={{
+          marginLeft: isCollapsed ? '4rem' : '16rem',
+          // Force hardware acceleration for smoother transitions
+          transform: 'translateZ(0)',
+          willChange: 'margin-left',
+        }}
+      >
         <AdminHeader
           isAdminMenuOpen={isAdminMenuOpen}
           setIsAdminMenuOpen={setIsAdminMenuOpen}
@@ -39,8 +65,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
           handleAdminLogout={handleAdminLogout}
         />
 
-        <main className="min-h-[calc(100vh-4rem)]">
-          {children}
+        <main className="relative">
+          <div className="min-h-[calc(100vh-4rem)]">
+            {children}
+          </div>
         </main>
       </div>
 
