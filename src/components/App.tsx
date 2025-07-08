@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigation } from '@/hooks/useNavigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { ClientLayout } from '@/layouts/ClientLayout';
 import { AdminLayout } from '@/layouts/AdminLayout';
 import { PATHS } from '@/lib/constants';
