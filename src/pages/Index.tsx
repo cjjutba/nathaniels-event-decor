@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Menu, 
@@ -26,7 +27,23 @@ import {
   Building2,
   Crown,
   Cake,
-  Home
+  Home,
+  // Admin icons
+  LayoutDashboard,
+  ClipboardList,
+  CalendarDays,
+  Package,
+  GalleryHorizontal,
+  Settings,
+  CircleUser,
+  Bell,
+  LogOut,
+  LineChart,
+  DollarSign,
+  ShoppingCart,
+  Activity,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 // Import generated images
@@ -53,24 +70,78 @@ const App = () => {
     message: ''
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  
+  // Admin authentication state
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminLoginForm, setAdminLoginForm] = useState({
+    username: '',
+    password: ''
+  });
+  const [adminLoginError, setAdminLoginError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  
   const { toast } = useToast();
 
   // Navigation handler
   const navigate = (path: string) => {
     setCurrentPage(path);
     setIsMenuOpen(false);
+    setIsAdminMenuOpen(false);
     window.history.pushState(null, '', path);
   };
 
-  // Handle browser back/forward
+  // Admin authentication functions
+  const handleAdminLogin = (username: string, password: string) => {
+    if (username === 'admin' && password === 'admin123') {
+      setIsAdminAuthenticated(true);
+      sessionStorage.setItem('adminToken', 'true');
+      setAdminLoginError('');
+      navigate('/admin/dashboard/');
+      toast({
+        title: "Login Successful",
+        description: "Welcome to the admin dashboard!",
+      });
+    } else {
+      setAdminLoginError('Invalid credentials. Please try again.');
+    }
+  };
+
+  const handleAdminLogout = () => {
+    setIsAdminAuthenticated(false);
+    sessionStorage.removeItem('adminToken');
+    navigate('/admin');
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
+  };
+
+  // Handle browser back/forward and check admin authentication
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPage(window.location.pathname);
     };
     
+    // Check for existing admin session
+    const adminToken = sessionStorage.getItem('adminToken');
+    if (adminToken === 'true') {
+      setIsAdminAuthenticated(true);
+    }
+    
+    // Set initial page from URL
+    setCurrentPage(window.location.pathname);
+    
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  // Route protection for admin dashboard
+  useEffect(() => {
+    if (currentPage.startsWith('/admin/dashboard') && !isAdminAuthenticated) {
+      navigate('/admin');
+    }
+  }, [currentPage, isAdminAuthenticated]);
 
   // Navbar Component
   const Navbar = () => (
@@ -695,6 +766,82 @@ const App = () => {
     );
   };
 
+  // Service Detail Page
+  const ServiceDetailPage = () => (
+    <div className="animate-fade-in">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
+            Wedding Decor & Planning
+          </h1>
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            Transform your special day into a magical celebration with our comprehensive wedding services
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+          <div>
+            <img 
+              src={weddingPortfolio} 
+              alt="Wedding Decor"
+              className="w-full h-96 object-cover rounded-lg shadow-card"
+            />
+          </div>
+          <div className="space-y-6">
+            <h2 className="text-3xl font-bold text-foreground">
+              Your Dream Wedding Awaits
+            </h2>
+            <p className="text-muted-foreground leading-relaxed">
+              Every wedding is a unique love story, and we're here to bring your vision to life. 
+              From intimate ceremonies to grand celebrations, our wedding planning and decor services 
+              ensure every detail is perfect for your special day.
+            </p>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <Heart className="h-5 w-5 text-primary" />
+                <span>Custom ceremony and reception design</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <span>Premium floral arrangements and decor</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Users className="h-5 w-5 text-primary" />
+                <span>Full-service event coordination</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Star className="h-5 w-5 text-primary" />
+                <span>Personalized theme development</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {[weddingPortfolio, wedding2Portfolio, weddingPortfolio].map((image, index) => (
+            <div key={index} className="relative group cursor-pointer overflow-hidden rounded-lg aspect-video">
+              <img 
+                src={image} 
+                alt={`Wedding Gallery ${index + 1}`}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              />
+              <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <Sparkles className="h-8 w-8 text-white" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="text-center">
+          <Button size="lg" onClick={() => navigate('/contact')}>
+            Inquire About This Service
+            <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   // Contact Page
   const ContactPage = () => {
     const handleSubmit = (e: React.FormEvent) => {
@@ -1011,7 +1158,7 @@ const App = () => {
   );
 
   // Client Dashboard Page
-  const DashboardPage = () => (
+  const ClientDashboardPage = () => (
     <div className="min-h-screen bg-muted/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center">
@@ -1037,8 +1184,429 @@ const App = () => {
     </div>
   );
 
-  // Router Component
+  // ===============================
+  // ADMIN COMPONENTS
+  // ===============================
+
+  // Admin Login Page Component
+  const AdminLoginPage = () => (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <CardTitle className="text-2xl font-bold">Admin Login</CardTitle>
+          <CardDescription>
+            Access the admin dashboard
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            handleAdminLogin(adminLoginForm.username, adminLoginForm.password);
+          }}>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="admin-username">Username</Label>
+                <Input
+                  id="admin-username"
+                  type="text"
+                  value={adminLoginForm.username}
+                  onChange={(e) => setAdminLoginForm({
+                    ...adminLoginForm,
+                    username: e.target.value
+                  })}
+                  placeholder="Enter username"
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="admin-password">Password</Label>
+                <div className="relative">
+                  <Input
+                    id="admin-password"
+                    type={showPassword ? "text" : "password"}
+                    value={adminLoginForm.password}
+                    onChange={(e) => setAdminLoginForm({
+                      ...adminLoginForm,
+                      password: e.target.value
+                    })}
+                    placeholder="Enter password"
+                    required
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              </div>
+              
+              {adminLoginError && (
+                <div className="text-sm text-destructive text-center">
+                  {adminLoginError}
+                </div>
+              )}
+              
+              <Button type="submit" className="w-full">
+                Login to Dashboard
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  // Admin Header Component
+  const AdminHeader = () => (
+    <header className="bg-foreground text-background border-b shadow-sm">
+      <div className="flex items-center justify-between h-16 px-6">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="md:hidden text-background hover:bg-background/10"
+            onClick={() => setIsAdminMenuOpen(!isAdminMenuOpen)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold">
+            <span className="text-primary">Admin</span> Dashboard
+          </h1>
+        </div>
+        
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="sm" className="text-background hover:bg-background/10">
+            <Bell className="h-5 w-5" />
+          </Button>
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-background hover:bg-background/10">
+                <CircleUser className="h-5 w-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-48" align="end">
+              <div className="space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/admin/dashboard/profile/')}
+                >
+                  <CircleUser className="h-4 w-4 mr-2" />
+                  Profile
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-destructive hover:text-destructive"
+                  onClick={handleAdminLogout}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </div>
+    </header>
+  );
+
+  // Admin Sidebar Component
+  const AdminSidebar = () => {
+    const adminNavItems = [
+      { path: '/admin/dashboard/', icon: LayoutDashboard, label: 'Dashboard' },
+      { path: '/admin/dashboard/inquiries/', icon: ClipboardList, label: 'Inquiries' },
+      { path: '/admin/dashboard/events/', icon: CalendarDays, label: 'Events' },
+      { path: '/admin/dashboard/services/', icon: Package, label: 'Services' },
+      { path: '/admin/dashboard/portfolio/', icon: GalleryHorizontal, label: 'Portfolio' },
+      { path: '/admin/dashboard/clients/', icon: Users, label: 'Clients' },
+      { path: '/admin/dashboard/settings/', icon: Settings, label: 'Settings' },
+      { path: '/admin/dashboard/profile/', icon: CircleUser, label: 'Profile' },
+    ];
+
+    return (
+      <aside className={`bg-primary text-primary-foreground w-64 fixed inset-y-0 left-0 z-50 transform ${
+        isAdminMenuOpen ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col`}>
+        <div className="flex-1 py-6 overflow-y-auto">
+          <nav className="space-y-2 px-4">
+            {adminNavItems.map((item) => {
+              const isActive = currentPage === item.path;
+              return (
+                <Button
+                  key={item.path}
+                  variant={isActive ? "secondary" : "ghost"}
+                  className={`w-full justify-start text-left ${
+                    isActive 
+                      ? "bg-primary-foreground text-primary" 
+                      : "text-primary-foreground hover:bg-primary-foreground/10"
+                  }`}
+                  onClick={() => navigate(item.path)}
+                >
+                  <item.icon className="h-4 w-4 mr-3" />
+                  {item.label}
+                </Button>
+              );
+            })}
+          </nav>
+        </div>
+      </aside>
+    );
+  };
+
+  // Admin Dashboard Page
+  const AdminDashboardPage = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Dashboard Overview</h1>
+        <p className="text-muted-foreground">Welcome back! Here's what's happening with your business.</p>
+      </div>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { icon: ClipboardList, title: 'New Inquiries', value: '5', color: 'text-blue-600' },
+          { icon: CalendarDays, title: 'Upcoming Events', value: '2', color: 'text-green-600' },
+          { icon: Package, title: 'Total Services', value: '10', color: 'text-purple-600' },
+          { icon: Users, title: 'Total Clients', value: '15', color: 'text-orange-600' },
+        ].map((stat, index) => (
+          <Card key={index}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
+                </div>
+                <stat.icon className={`h-8 w-8 ${stat.color}`} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest updates and actions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                <p className="text-sm">New inquiry received for wedding planning</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                <p className="text-sm">Birthday event confirmed for next week</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
+                <p className="text-sm">Portfolio updated with new images</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Quick Actions</CardTitle>
+            <CardDescription>Common tasks and shortcuts</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/admin/dashboard/inquiries/')}>
+                <ClipboardList className="h-4 w-4 mr-2" />
+                View All Inquiries
+              </Button>
+              <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/admin/dashboard/events/')}>
+                <CalendarDays className="h-4 w-4 mr-2" />
+                Manage Events
+              </Button>
+              <Button variant="outline" className="w-full justify-start" onClick={() => navigate('/admin/dashboard/portfolio/')}>
+                <GalleryHorizontal className="h-4 w-4 mr-2" />
+                Update Portfolio
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+
+  // Admin Content Pages (Placeholders)
+  const AdminInquiriesPage = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Client Inquiries</h1>
+        <p className="text-muted-foreground">Manage and respond to client inquiries</p>
+      </div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <ClipboardList className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h3>
+          <p className="text-muted-foreground">List of client inquiries will go here.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const AdminEventsPage = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Event Bookings</h1>
+        <p className="text-muted-foreground">Track and manage confirmed events</p>
+      </div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <CalendarDays className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h3>
+          <p className="text-muted-foreground">Manage confirmed event bookings.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const AdminServicesPage = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Manage Services</h1>
+        <p className="text-muted-foreground">Add, edit, and organize your service offerings</p>
+      </div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h3>
+          <p className="text-muted-foreground">Add, edit, or delete services.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const AdminPortfolioPage = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Manage Portfolio</h1>
+        <p className="text-muted-foreground">Upload and organize your portfolio images</p>
+      </div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <GalleryHorizontal className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h3>
+          <p className="text-muted-foreground">Upload and organize portfolio images.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const AdminClientsPage = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Client Accounts</h1>
+        <p className="text-muted-foreground">View and manage registered clients</p>
+      </div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h3>
+          <p className="text-muted-foreground">View and manage registered clients.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const AdminSettingsPage = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Settings</h1>
+        <p className="text-muted-foreground">Configure application settings</p>
+      </div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Settings className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h3>
+          <p className="text-muted-foreground">Application settings and configurations.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const AdminProfilePage = () => (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-foreground">Admin Profile</h1>
+        <p className="text-muted-foreground">Manage your admin account details</p>
+      </div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <CircleUser className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">Coming Soon</h3>
+          <p className="text-muted-foreground">Manage admin account details.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  // Admin Layout Component
+  const AdminLayout = () => {
+    const renderAdminContent = () => {
+      if (currentPage === '/admin/dashboard/') return <AdminDashboardPage />;
+      if (currentPage === '/admin/dashboard/inquiries/') return <AdminInquiriesPage />;
+      if (currentPage === '/admin/dashboard/events/') return <AdminEventsPage />;
+      if (currentPage === '/admin/dashboard/services/') return <AdminServicesPage />;
+      if (currentPage === '/admin/dashboard/portfolio/') return <AdminPortfolioPage />;
+      if (currentPage === '/admin/dashboard/clients/') return <AdminClientsPage />;
+      if (currentPage === '/admin/dashboard/settings/') return <AdminSettingsPage />;
+      if (currentPage === '/admin/dashboard/profile/') return <AdminProfilePage />;
+      return <AdminDashboardPage />; // Default fallback
+    };
+
+    return (
+      <div className="min-h-screen bg-background">
+        <AdminHeader />
+        <div className="flex">
+          <AdminSidebar />
+          <main className="flex-1 md:ml-64 p-6">
+            <div className="max-w-7xl mx-auto">
+              {renderAdminContent()}
+            </div>
+          </main>
+        </div>
+        
+        {/* Mobile overlay */}
+        {isAdminMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setIsAdminMenuOpen(false)}
+          />
+        )}
+      </div>
+    );
+  };
+
+  // Main App rendering with routing
   const renderPage = () => {
+    // Admin routes handling
+    if (currentPage === '/admin') {
+      return <AdminLoginPage />;
+    }
+    
+    if (currentPage.startsWith('/admin/dashboard')) {
+      if (!isAdminAuthenticated) {
+        // This will be handled by useEffect redirect, but just in case
+        return <AdminLoginPage />;
+      }
+      return <AdminLayout />;
+    }
+    
+    // Client routes handling
     switch (currentPage) {
       case '/':
         return <HomePage />;
@@ -1046,6 +1614,8 @@ const App = () => {
         return <AboutPage />;
       case '/services':
         return <ServicesPage />;
+      case '/services/wedding':
+        return <ServiceDetailPage />;
       case '/portfolio':
         return <PortfolioPage />;
       case '/contact':
@@ -1055,21 +1625,32 @@ const App = () => {
       case '/signup':
         return <SignupPage />;
       case '/client/dashboard':
-        return <DashboardPage />;
+        return <ClientDashboardPage />;
       default:
         return <HomePage />;
     }
   };
 
-  return (
-    <div className="min-h-screen bg-background font-sans">
-      <Navbar />
-      <main className="flex-1">
-        {renderPage()}
-      </main>
-      <Footer />
-    </div>
-  );
+  // Render the appropriate layout based on the current route
+  const renderLayout = () => {
+    // Admin routes don't use the main client layout
+    if (currentPage === '/admin' || currentPage.startsWith('/admin/dashboard')) {
+      return renderPage();
+    }
+    
+    // Client routes use the standard layout with Navbar and Footer
+    return (
+      <div className="min-h-screen bg-background font-sans">
+        <Navbar />
+        <main className="flex-1">
+          {renderPage()}
+        </main>
+        <Footer />
+      </div>
+    );
+  };
+
+  return renderLayout();
 };
 
 export default App;
