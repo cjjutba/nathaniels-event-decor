@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
   ClipboardList,
   Search,
@@ -49,6 +50,9 @@ import {
   X,
 } from 'lucide-react';
 import { HighlightableCard } from '@/components/ui/highlightable-card';
+import { useDeleteConfirmation, useStatusChangeConfirmation, useArchiveConfirmation } from '@/contexts/ConfirmationContext';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useDataInitialization } from '@/hooks/useDataInitialization';
 
 interface Inquiry {
   id: string;
@@ -73,6 +77,9 @@ interface FilterState {
 
 export const AdminInquiriesPage: React.FC = () => {
   const { toast } = useToast();
+  const confirmDelete = useDeleteConfirmation();
+  const confirmStatusChange = useStatusChangeConfirmation();
+  const confirmArchive = useArchiveConfirmation();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
@@ -120,79 +127,11 @@ export const AdminInquiriesPage: React.FC = () => {
 
   const isHighlighted = (itemId: string) => highlightedItemId === itemId;
 
-  // Sample inquiry data
-  const [inquiries, setInquiries] = useState<Inquiry[]>([
-    {
-      id: '1',
-      clientName: 'Sarah Johnson',
-      email: 'sarah.johnson@email.com',
-      phone: '+1 (555) 123-4567',
-      eventType: 'Wedding',
-      eventDate: '2024-06-15',
-      location: 'Manila Hotel, Philippines',
-      budget: '₱150,000 - ₱200,000',
-      message: 'Hi! I\'m planning my wedding for June 2024 and would love to discuss decoration options. We\'re looking for an elegant, romantic theme with white and gold accents.',
-      status: 'new',
-      submittedAt: '2024-01-15T10:30:00Z',
-      lastUpdated: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: '2',
-      clientName: 'Michael Chen',
-      email: 'michael.chen@company.com',
-      phone: '+1 (555) 987-6543',
-      eventType: 'Corporate Event',
-      eventDate: '2024-03-20',
-      location: 'BGC Convention Center',
-      budget: '₱80,000 - ₱120,000',
-      message: 'We need event decoration for our annual company gala. The theme should be modern and professional with our brand colors (blue and silver).',
-      status: 'in-progress',
-      submittedAt: '2024-01-14T14:20:00Z',
-      lastUpdated: '2024-01-14T16:45:00Z'
-    },
-    {
-      id: '3',
-      clientName: 'Maria Rodriguez',
-      email: 'maria.rodriguez@email.com',
-      phone: '+1 (555) 456-7890',
-      eventType: 'Birthday Party',
-      eventDate: '2024-02-28',
-      location: 'Private Residence, Makati',
-      budget: '₱30,000 - ₱50,000',
-      message: 'Planning a surprise 50th birthday party for my husband. Looking for sophisticated decorations with a vintage theme.',
-      status: 'responded',
-      submittedAt: '2024-01-13T09:15:00Z',
-      lastUpdated: '2024-01-13T11:30:00Z'
-    },
-    {
-      id: '4',
-      clientName: 'David Kim',
-      email: 'david.kim@email.com',
-      phone: '+1 (555) 321-0987',
-      eventType: 'Anniversary',
-      eventDate: '2024-04-10',
-      location: 'Garden Restaurant, Quezon City',
-      budget: '₱60,000 - ₱90,000',
-      message: 'Celebrating our 25th wedding anniversary. We want something romantic and elegant with floral arrangements.',
-      status: 'converted',
-      submittedAt: '2024-01-12T16:45:00Z',
-      lastUpdated: '2024-01-12T18:20:00Z'
-    },
-    {
-      id: '5',
-      clientName: 'Lisa Thompson',
-      email: 'lisa.thompson@email.com',
-      phone: '+1 (555) 654-3210',
-      eventType: 'Graduation Party',
-      eventDate: '2024-05-05',
-      location: 'University Club, Diliman',
-      budget: '₱40,000 - ₱70,000',
-      message: 'Graduation party for my daughter. Looking for fun, colorful decorations with a celebration theme.',
-      status: 'archived',
-      submittedAt: '2024-01-11T13:20:00Z',
-      lastUpdated: '2024-01-11T15:10:00Z'
-    }
-  ]);
+  // Initialize data in localStorage if empty
+  useDataInitialization();
+
+  // Use localStorage for inquiries data
+  const [inquiries, setInquiries] = useLocalStorage<Inquiry[]>('admin_inquiries', []);
 
   // Helper functions
   const getStatusColor = (status: string) => {
@@ -342,7 +281,19 @@ export const AdminInquiriesPage: React.FC = () => {
   ];
 
   // Action handlers
-  const updateInquiryStatus = (id: string, newStatus: Inquiry['status']) => {
+  const updateInquiryStatus = async (id: string, newStatus: Inquiry['status']) => {
+    const inquiry = inquiries.find(i => i.id === id);
+    if (!inquiry) return;
+
+    // Special handling for archive status
+    if (newStatus === 'archived') {
+      const confirmed = await confirmArchive(`${inquiry.clientName}'s inquiry`);
+      if (!confirmed) return;
+    } else {
+      const confirmed = await confirmStatusChange(`${inquiry.clientName}'s inquiry`, newStatus);
+      if (!confirmed) return;
+    }
+
     setInquiries(prev => prev.map(inquiry =>
       inquiry.id === id
         ? { ...inquiry, status: newStatus, lastUpdated: new Date().toISOString() }
@@ -355,13 +306,25 @@ export const AdminInquiriesPage: React.FC = () => {
     });
   };
 
-  const deleteInquiry = (id: string) => {
+  const deleteInquiry = async (id: string) => {
+    console.log('deleteInquiry called with id:', id);
     const inquiry = inquiries.find(i => i.id === id);
+    if (!inquiry) {
+      console.log('Inquiry not found');
+      return;
+    }
+
+    console.log('Showing confirmation for:', inquiry.clientName);
+    const confirmed = await confirmDelete(`${inquiry.clientName}'s inquiry`);
+    console.log('Confirmation result:', confirmed);
+    if (!confirmed) return;
+
+    console.log('Deleting inquiry...');
     setInquiries(prev => prev.filter(inquiry => inquiry.id !== id));
 
     toast({
       title: "Inquiry Deleted",
-      description: `Inquiry from ${inquiry?.clientName} has been deleted`,
+      description: `Inquiry from ${inquiry.clientName} has been deleted`,
     });
   };
 
@@ -902,6 +865,118 @@ export const AdminInquiriesPage: React.FC = () => {
                 </Button>
               </div>
             </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Inquiry Details Modal */}
+      <Dialog open={!!selectedInquiry && !isResponseDialogOpen} onOpenChange={() => setSelectedInquiry(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          {selectedInquiry && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <ClipboardList className="h-5 w-5 text-primary" />
+                  <span>Inquiry Details</span>
+                </DialogTitle>
+                <DialogDescription>
+                  Complete information about this client inquiry
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-6">
+                {/* Client Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Client Name</Label>
+                    <p className="text-sm font-medium">{selectedInquiry.clientName}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                    <Badge variant={selectedInquiry.status === 'new' ? 'default' :
+                                   selectedInquiry.status === 'in-progress' ? 'secondary' :
+                                   selectedInquiry.status === 'responded' ? 'outline' :
+                                   selectedInquiry.status === 'converted' ? 'default' : 'secondary'}>
+                      {selectedInquiry.status}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Email</Label>
+                    <div className="flex items-center space-x-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{selectedInquiry.email}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Phone</Label>
+                    <div className="flex items-center space-x-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{selectedInquiry.phone}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Event Date</Label>
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{selectedInquiry.eventDate}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Location</Label>
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{selectedInquiry.location}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Budget Range</Label>
+                    <div className="flex items-center space-x-2">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{selectedInquiry.budgetRange}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Event Type</Label>
+                    <p className="text-sm">{selectedInquiry.eventType}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Message */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Message</Label>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm whitespace-pre-wrap">{selectedInquiry.message}</p>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Timestamps */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-muted-foreground">
+                  <div>
+                    <span className="font-medium">Submitted:</span> {new Date(selectedInquiry.submittedAt).toLocaleString()}
+                  </div>
+                  <div>
+                    <span className="font-medium">Last Updated:</span> {new Date(selectedInquiry.lastUpdated).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setSelectedInquiry(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => {
+                  setIsResponseDialogOpen(true);
+                }}>
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Send Response
+                </Button>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

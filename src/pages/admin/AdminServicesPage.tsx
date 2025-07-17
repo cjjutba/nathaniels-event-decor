@@ -57,6 +57,9 @@ import {
   Image,
   Settings,
 } from 'lucide-react';
+import { useAdminActions } from '@/hooks/useAdminActions';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useDataInitialization } from '@/hooks/useDataInitialization';
 
 interface Service {
   id: string;
@@ -83,6 +86,10 @@ interface FilterState {
 
 export const AdminServicesPage: React.FC = () => {
   const { toast } = useToast();
+  const adminActions = useAdminActions({
+    entityName: 'service',
+    entityDisplayName: 'Service'
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -90,6 +97,13 @@ export const AdminServicesPage: React.FC = () => {
   const [isAddServiceDialogOpen, setIsAddServiceDialogOpen] = useState(false);
   const [isEditServiceDialogOpen, setIsEditServiceDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [newServiceForm, setNewServiceForm] = useState({
+    title: '',
+    description: '',
+    category: '',
+    basePrice: '',
+    features: [] as string[]
+  });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
@@ -102,105 +116,11 @@ export const AdminServicesPage: React.FC = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   useScrollToHighlight(highlightedId, containerRef);
 
-  // Sample service data based on the client services
-  const [services, setServices] = useState<Service[]>([
-    {
-      id: '1',
-      title: 'Wedding Planning & Decor',
-      description: 'Complete wedding planning and decor services including venue styling, floral arrangements, lighting design, and coordination to make your special day absolutely perfect.',
-      category: 'Wedding',
-      status: 'active',
-      basePrice: '₱80,000',
-      features: ['Ceremony & Reception Decor', 'Floral Design', 'Lighting & Ambiance', 'Day-of Coordination'],
-      icon: 'Heart',
-      image: '/images/wedding-portfolio.jpg',
-      popularity: 95,
-      totalBookings: 45,
-      averageRating: 4.9,
-      createdAt: '2024-01-01T00:00:00Z',
-      lastUpdated: '2024-01-20T10:30:00Z'
-    },
-    {
-      id: '2',
-      title: 'Birthday Celebrations',
-      description: 'Creative birthday celebrations for all ages with custom themes, balloon arrangements, table settings, and entertainment coordination to create unforgettable memories.',
-      category: 'Birthday',
-      status: 'active',
-      basePrice: '₱25,000',
-      features: ['Custom Themes', 'Balloon Artistry', 'Party Favors', 'Entertainment Setup'],
-      icon: 'Cake',
-      image: '/images/birthday-portfolio.jpg',
-      popularity: 88,
-      totalBookings: 32,
-      averageRating: 4.7,
-      createdAt: '2024-01-01T00:00:00Z',
-      lastUpdated: '2024-01-18T14:20:00Z'
-    },
-    {
-      id: '3',
-      title: 'Corporate Events',
-      description: 'Professional corporate event services including conferences, product launches, team building events, and company celebrations with sophisticated styling.',
-      category: 'Corporate',
-      status: 'active',
-      basePrice: '₱60,000',
-      features: ['Brand Integration', 'Professional Staging', 'Tech Setup', 'Networking Areas'],
-      icon: 'Building2',
-      image: '/images/corporate-portfolio.jpg',
-      popularity: 82,
-      totalBookings: 28,
-      averageRating: 4.8,
-      createdAt: '2024-01-01T00:00:00Z',
-      lastUpdated: '2024-01-15T16:45:00Z'
-    },
-    {
-      id: '4',
-      title: 'Fiesta Celebrations',
-      description: 'Vibrant cultural celebrations featuring traditional decorations, colorful arrangements, authentic styling, and festive atmospheres that honor cultural heritage.',
-      category: 'Cultural',
-      status: 'active',
-      basePrice: '₱35,000',
-      features: ['Traditional Decor', 'Cultural Styling', 'Festive Lighting', 'Authentic Ambiance'],
-      icon: 'PartyPopper',
-      image: '/images/fiesta-portfolio.jpg',
-      popularity: 75,
-      totalBookings: 18,
-      averageRating: 4.6,
-      createdAt: '2024-01-01T00:00:00Z',
-      lastUpdated: '2024-01-12T11:30:00Z'
-    },
-    {
-      id: '5',
-      title: 'Pageant Productions',
-      description: 'Elegant pageant productions with professional stage design, runway setup, lighting systems, and backstage coordination for memorable competitions.',
-      category: 'Entertainment',
-      status: 'active',
-      basePrice: '₱120,000',
-      features: ['Stage Design', 'Runway Setup', 'Professional Lighting', 'Backstage Coordination'],
-      icon: 'Crown',
-      image: '/images/pageant-portfolio.jpg',
-      popularity: 70,
-      totalBookings: 12,
-      averageRating: 4.9,
-      createdAt: '2024-01-01T00:00:00Z',
-      lastUpdated: '2024-01-10T09:15:00Z'
-    },
-    {
-      id: '6',
-      title: 'Special Occasions',
-      description: 'Custom event planning for anniversaries, graduations, baby showers, and other special milestones with personalized touches and unique styling.',
-      category: 'Special Events',
-      status: 'active',
-      basePrice: '₱40,000',
-      features: ['Custom Design', 'Personalized Touches', 'Flexible Packages', 'Full Coordination'],
-      icon: 'Sparkles',
-      image: '/images/special-occasions.jpg',
-      popularity: 85,
-      totalBookings: 25,
-      averageRating: 4.8,
-      createdAt: '2024-01-01T00:00:00Z',
-      lastUpdated: '2024-01-08T13:45:00Z'
-    }
-  ]);
+  // Initialize data in localStorage if empty
+  useDataInitialization();
+
+  // Use localStorage for services data
+  const [services, setServices] = useLocalStorage<Service[]>('admin_services', []);
 
   // Helper functions
   const getStatusColor = (status: string) => {
@@ -345,16 +265,13 @@ export const AdminServicesPage: React.FC = () => {
 
   // Action handlers
   const updateServiceStatus = (id: string, newStatus: Service['status']) => {
-    setServices(prev => prev.map(service =>
-      service.id === id
-        ? { ...service, status: newStatus, lastUpdated: new Date().toISOString() }
-        : service
-    ));
-
-    toast({
-      title: "Status Updated",
-      description: `Service status changed to ${newStatus}`,
-    });
+    adminActions.handleStatusChange(
+      id,
+      newStatus,
+      services,
+      setServices,
+      (service) => service.title
+    );
   };
 
   const editService = (service: Service) => {
@@ -363,12 +280,57 @@ export const AdminServicesPage: React.FC = () => {
   };
 
   const deleteService = (id: string) => {
-    const service = services.find(s => s.id === id);
-    setServices(prev => prev.filter(service => service.id !== id));
+    adminActions.handleDelete(
+      id,
+      services,
+      setServices,
+      (service) => service.title
+    );
+  };
+
+  const createService = () => {
+    if (!newServiceForm.title || !newServiceForm.description || !newServiceForm.category) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields (Title, Description, Category)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newService: Service = {
+      id: Date.now().toString(),
+      title: newServiceForm.title,
+      description: newServiceForm.description,
+      category: newServiceForm.category,
+      status: 'active',
+      basePrice: newServiceForm.basePrice || '₱0',
+      features: newServiceForm.features,
+      icon: 'Star',
+      image: '/images/service-placeholder.jpg',
+      popularity: 0,
+      totalBookings: 0,
+      averageRating: 0,
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    };
+
+    setServices(prev => [newService, ...prev]);
+
+    // Reset form
+    setNewServiceForm({
+      title: '',
+      description: '',
+      category: '',
+      basePrice: '',
+      features: []
+    });
+
+    setIsAddServiceDialogOpen(false);
 
     toast({
-      title: "Service Deleted",
-      description: `"${service?.title}" has been deleted`,
+      title: "Service Created",
+      description: `"${newService.title}" has been added successfully`,
     });
   };
 
@@ -986,47 +948,69 @@ export const AdminServicesPage: React.FC = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Service Title</Label>
-                <Input id="title" placeholder="Enter service title" />
+                <Label htmlFor="title">Service Title *</Label>
+                <Input
+                  id="title"
+                  placeholder="Enter service title"
+                  value={newServiceForm.title}
+                  onChange={(e) => setNewServiceForm(prev => ({ ...prev, title: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input id="category" placeholder="Enter category" />
+                <Label htmlFor="category">Category *</Label>
+                <select
+                  id="category"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={newServiceForm.category}
+                  onChange={(e) => setNewServiceForm(prev => ({ ...prev, category: e.target.value }))}
+                >
+                  <option value="">Select category</option>
+                  <option value="Wedding">Wedding</option>
+                  <option value="Corporate">Corporate</option>
+                  <option value="Birthday">Birthday</option>
+                  <option value="Anniversary">Anniversary</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" placeholder="Enter service description" rows={3} />
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                placeholder="Enter service description"
+                rows={3}
+                value={newServiceForm.description}
+                onChange={(e) => setNewServiceForm(prev => ({ ...prev, description: e.target.value }))}
+              />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="basePrice">Base Price</Label>
-                <Input id="basePrice" placeholder="₱0" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Input id="status" placeholder="active" />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="basePrice">Base Price</Label>
+              <Input
+                id="basePrice"
+                placeholder="₱0"
+                value={newServiceForm.basePrice}
+                onChange={(e) => setNewServiceForm(prev => ({ ...prev, basePrice: e.target.value }))}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="features">Features (one per line)</Label>
-              <Textarea id="features" placeholder="Enter features, one per line" rows={4} />
+              <Textarea
+                id="features"
+                placeholder="Enter features, one per line"
+                rows={4}
+                value={newServiceForm.features.join('\n')}
+                onChange={(e) => setNewServiceForm(prev => ({ ...prev, features: e.target.value.split('\n').filter(f => f.trim()) }))}
+              />
             </div>
 
             <div className="flex items-center justify-end space-x-2 pt-4">
               <Button variant="outline" onClick={() => setIsAddServiceDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => {
-                toast({
-                  title: "Service Added",
-                  description: "New service has been created successfully",
-                });
-                setIsAddServiceDialogOpen(false);
-              }}>
+              <Button onClick={createService}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Service
               </Button>

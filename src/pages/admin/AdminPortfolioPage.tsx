@@ -59,6 +59,9 @@ import {
   Settings,
 } from 'lucide-react';
 import { HighlightableCard } from '@/components/ui/highlightable-card';
+import { useAdminActions } from '@/hooks/useAdminActions';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useDataInitialization } from '@/hooks/useDataInitialization';
 import {
   weddingPortfolio,
   birthdayPortfolio,
@@ -94,6 +97,10 @@ interface FilterState {
 
 export const AdminPortfolioPage: React.FC = () => {
   const { toast } = useToast();
+  const adminActions = useAdminActions({
+    entityName: 'portfolio item',
+    entityDisplayName: 'Portfolio Item'
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedItem, setSelectedItem] = useState<PortfolioItem | null>(null);
@@ -101,6 +108,14 @@ export const AdminPortfolioPage: React.FC = () => {
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
+  const [newItemForm, setNewItemForm] = useState({
+    title: '',
+    description: '',
+    category: '',
+    eventDate: '',
+    clientName: '',
+    tags: [] as string[]
+  });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     categories: [],
@@ -144,105 +159,11 @@ export const AdminPortfolioPage: React.FC = () => {
 
   const isHighlighted = (itemId: string) => highlightedItemId === itemId;
 
-  // Sample portfolio data based on the client portfolio
-  const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([
-    {
-      id: '1',
-      title: 'Elegant Garden Wedding',
-      description: 'A breathtaking outdoor wedding ceremony with romantic garden theme, featuring white and gold decorations, floral arrangements, and ambient lighting.',
-      category: 'Weddings',
-      status: 'published',
-      image: weddingPortfolio,
-      tags: ['outdoor', 'garden', 'romantic', 'white', 'gold'],
-      eventDate: '2024-06-15',
-      clientName: 'Sarah & Mike Johnson',
-      views: 1250,
-      likes: 89,
-      featured: true,
-      createdAt: '2024-01-15T10:30:00Z',
-      lastUpdated: '2024-01-20T14:45:00Z'
-    },
-    {
-      id: '2',
-      title: 'Colorful Birthday Celebration',
-      description: 'Vibrant and fun birthday party setup with colorful balloons, themed decorations, and creative party arrangements for a memorable celebration.',
-      category: 'Birthdays',
-      status: 'published',
-      image: birthdayPortfolio,
-      tags: ['colorful', 'fun', 'balloons', 'themed', 'party'],
-      eventDate: '2024-02-28',
-      clientName: 'Maria Rodriguez',
-      views: 890,
-      likes: 67,
-      featured: false,
-      createdAt: '2024-01-13T09:15:00Z',
-      lastUpdated: '2024-01-18T11:30:00Z'
-    },
-    {
-      id: '3',
-      title: 'Professional Corporate Gala',
-      description: 'Sophisticated corporate event with modern staging, professional lighting, and brand-integrated decorations for a successful business gathering.',
-      category: 'Corporate',
-      status: 'published',
-      image: corporatePortfolio,
-      tags: ['professional', 'corporate', 'modern', 'branding', 'networking'],
-      eventDate: '2024-03-20',
-      clientName: 'TechCorp Inc.',
-      views: 1100,
-      likes: 78,
-      featured: true,
-      createdAt: '2024-01-14T14:20:00Z',
-      lastUpdated: '2024-01-25T16:30:00Z'
-    },
-    {
-      id: '4',
-      title: 'Vibrant Cultural Festival',
-      description: 'Traditional fiesta celebration with authentic cultural decorations, colorful arrangements, and festive atmosphere honoring cultural heritage.',
-      category: 'Fiestas',
-      status: 'published',
-      image: fiestaPortfolio,
-      tags: ['cultural', 'traditional', 'colorful', 'festive', 'heritage'],
-      eventDate: '2024-04-10',
-      clientName: 'Cultural Association',
-      views: 750,
-      likes: 56,
-      featured: false,
-      createdAt: '2024-01-12T16:45:00Z',
-      lastUpdated: '2024-01-15T18:20:00Z'
-    },
-    {
-      id: '5',
-      title: 'Glamorous Beauty Pageant',
-      description: 'Elegant pageant production with professional stage design, runway setup, sophisticated lighting, and backstage coordination.',
-      category: 'Pageants',
-      status: 'published',
-      image: pageantPortfolio,
-      tags: ['glamorous', 'stage', 'runway', 'lighting', 'professional'],
-      eventDate: '2024-05-05',
-      clientName: 'Beauty Pageant Organization',
-      views: 980,
-      likes: 92,
-      featured: true,
-      createdAt: '2024-01-11T13:20:00Z',
-      lastUpdated: '2024-01-12T15:10:00Z'
-    },
-    {
-      id: '6',
-      title: 'Romantic Ceremony Setup',
-      description: 'Intimate wedding ceremony with romantic ambiance, elegant floral arrangements, and personalized touches for a perfect celebration of love.',
-      category: 'Weddings',
-      status: 'published',
-      image: wedding2Portfolio,
-      tags: ['romantic', 'intimate', 'elegant', 'floral', 'personalized'],
-      eventDate: '2024-07-20',
-      clientName: 'David & Lisa Kim',
-      views: 1350,
-      likes: 105,
-      featured: false,
-      createdAt: '2024-01-10T09:15:00Z',
-      lastUpdated: '2024-01-11T11:45:00Z'
-    }
-  ]);
+  // Initialize data in localStorage if empty
+  useDataInitialization();
+
+  // Use localStorage for portfolio data
+  const [portfolioItems, setPortfolioItems] = useLocalStorage<PortfolioItem[]>('admin_portfolio', []);
 
   // Helper functions
   const getStatusColor = (status: string) => {
@@ -400,39 +321,77 @@ export const AdminPortfolioPage: React.FC = () => {
 
   // Action handlers
   const updateItemStatus = (id: string, newStatus: PortfolioItem['status']) => {
-    setPortfolioItems(prev => prev.map(item =>
-      item.id === id
-        ? { ...item, status: newStatus, lastUpdated: new Date().toISOString() }
-        : item
-    ));
-
-    toast({
-      title: "Status Updated",
-      description: `Portfolio item status changed to ${newStatus}`,
-    });
+    adminActions.handleStatusChange(
+      id,
+      newStatus,
+      portfolioItems,
+      setPortfolioItems,
+      (item) => item.title
+    );
   };
 
   const toggleFeatured = (id: string) => {
-    setPortfolioItems(prev => prev.map(item =>
-      item.id === id
-        ? { ...item, featured: !item.featured, lastUpdated: new Date().toISOString() }
-        : item
-    ));
-
-    const item = portfolioItems.find(i => i.id === id);
-    toast({
-      title: item?.featured ? "Removed from Featured" : "Added to Featured",
-      description: `"${item?.title}" ${item?.featured ? 'removed from' : 'added to'} featured items`,
-    });
+    adminActions.handleFeatureToggle(
+      id,
+      portfolioItems,
+      setPortfolioItems,
+      (item) => item.title
+    );
   };
 
   const deleteItem = (id: string) => {
-    const item = portfolioItems.find(i => i.id === id);
-    setPortfolioItems(prev => prev.filter(item => item.id !== id));
+    adminActions.handleDelete(
+      id,
+      portfolioItems,
+      setPortfolioItems,
+      (item) => item.title
+    );
+  };
+
+  const createItem = () => {
+    if (!newItemForm.title || !newItemForm.description || !newItemForm.category) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields (Title, Description, Category)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newItem: PortfolioItem = {
+      id: Date.now().toString(),
+      title: newItemForm.title,
+      description: newItemForm.description,
+      category: newItemForm.category,
+      status: 'published',
+      image: '/images/portfolio-placeholder.jpg',
+      tags: newItemForm.tags,
+      eventDate: newItemForm.eventDate || new Date().toISOString().split('T')[0],
+      clientName: newItemForm.clientName || 'Anonymous',
+      views: 0,
+      likes: 0,
+      featured: false,
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    };
+
+    setPortfolioItems(prev => [newItem, ...prev]);
+
+    // Reset form
+    setNewItemForm({
+      title: '',
+      description: '',
+      category: '',
+      eventDate: '',
+      clientName: '',
+      tags: []
+    });
+
+    setIsAddItemDialogOpen(false);
 
     toast({
-      title: "Portfolio Item Deleted",
-      description: `"${item?.title}" has been deleted`,
+      title: "Portfolio Item Created",
+      description: `"${newItem.title}" has been added successfully`,
     });
   };
 
@@ -1053,34 +1012,72 @@ export const AdminPortfolioPage: React.FC = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input id="title" placeholder="Enter item title" />
+                <Label htmlFor="title">Title *</Label>
+                <Input
+                  id="title"
+                  placeholder="Enter item title"
+                  value={newItemForm.title}
+                  onChange={(e) => setNewItemForm(prev => ({ ...prev, title: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <Input id="category" placeholder="Enter category" />
+                <Label htmlFor="category">Category *</Label>
+                <select
+                  id="category"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={newItemForm.category}
+                  onChange={(e) => setNewItemForm(prev => ({ ...prev, category: e.target.value }))}
+                >
+                  <option value="">Select category</option>
+                  <option value="Weddings">Weddings</option>
+                  <option value="Birthdays">Birthdays</option>
+                  <option value="Corporate">Corporate</option>
+                  <option value="Fiestas">Fiestas</option>
+                  <option value="Pageants">Pageants</option>
+                </select>
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea id="description" placeholder="Enter item description" rows={3} />
+              <Label htmlFor="description">Description *</Label>
+              <Textarea
+                id="description"
+                placeholder="Enter item description"
+                rows={3}
+                value={newItemForm.description}
+                onChange={(e) => setNewItemForm(prev => ({ ...prev, description: e.target.value }))}
+              />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="clientName">Client Name</Label>
-                <Input id="clientName" placeholder="Enter client name" />
+                <Input
+                  id="clientName"
+                  placeholder="Enter client name"
+                  value={newItemForm.clientName}
+                  onChange={(e) => setNewItemForm(prev => ({ ...prev, clientName: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="eventDate">Event Date</Label>
-                <Input id="eventDate" type="date" />
+                <Input
+                  id="eventDate"
+                  type="date"
+                  value={newItemForm.eventDate}
+                  onChange={(e) => setNewItemForm(prev => ({ ...prev, eventDate: e.target.value }))}
+                />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="tags">Tags (comma separated)</Label>
-              <Input id="tags" placeholder="romantic, elegant, outdoor, etc." />
+              <Input
+                id="tags"
+                placeholder="romantic, elegant, outdoor, etc."
+                value={newItemForm.tags.join(', ')}
+                onChange={(e) => setNewItemForm(prev => ({ ...prev, tags: e.target.value.split(',').map(t => t.trim()).filter(t => t) }))}
+              />
             </div>
 
             <div className="space-y-2">
@@ -1096,13 +1093,7 @@ export const AdminPortfolioPage: React.FC = () => {
               <Button variant="outline" onClick={() => setIsAddItemDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => {
-                toast({
-                  title: "Portfolio Item Added",
-                  description: "New portfolio item has been created successfully",
-                });
-                setIsAddItemDialogOpen(false);
-              }}>
+              <Button onClick={createItem}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Item
               </Button>

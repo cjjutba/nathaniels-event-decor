@@ -26,6 +26,9 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { HighlightableCard } from '@/components/ui/highlightable-card';
+import { useDeleteConfirmation, useStatusChangeConfirmation } from '@/contexts/ConfirmationContext';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useDataInitialization } from '@/hooks/useDataInitialization';
 import {
   CalendarDays,
   Search,
@@ -81,6 +84,8 @@ interface FilterState {
 
 export const AdminEventsPage: React.FC = () => {
   const { toast } = useToast();
+  const confirmDelete = useDeleteConfirmation();
+  const confirmStatusChange = useStatusChangeConfirmation();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -88,6 +93,19 @@ export const AdminEventsPage: React.FC = () => {
   const [isAddEventDialogOpen, setIsAddEventDialogOpen] = useState(false);
   const [isEditEventDialogOpen, setIsEditEventDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
+  const [newEventForm, setNewEventForm] = useState({
+    title: '',
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    eventType: '',
+    eventDate: '',
+    eventTime: '',
+    location: '',
+    budget: '',
+    description: '',
+    services: [] as string[]
+  });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     eventTypes: [],
@@ -131,94 +149,11 @@ export const AdminEventsPage: React.FC = () => {
 
   const isHighlighted = (itemId: string) => highlightedItemId === itemId;
 
-  // Sample event data
-  const [events, setEvents] = useState<Event[]>([
-    {
-      id: '1',
-      title: 'Johnson Wedding',
-      clientName: 'Sarah & Mike Johnson',
-      clientEmail: 'sarah.johnson@email.com',
-      clientPhone: '+1 (555) 123-4567',
-      eventType: 'Wedding',
-      eventDate: '2024-06-15',
-      eventTime: '16:00',
-      location: 'Manila Hotel, Philippines',
-      budget: '₱180,000',
-      status: 'confirmed',
-      description: 'Elegant wedding ceremony and reception with white and gold theme. Includes floral arrangements, table settings, and backdrop decorations.',
-      services: ['Floral Arrangements', 'Table Settings', 'Backdrop Design', 'Lighting'],
-      createdAt: '2024-01-15T10:30:00Z',
-      lastUpdated: '2024-01-20T14:45:00Z'
-    },
-    {
-      id: '2',
-      title: 'Corporate Annual Gala',
-      clientName: 'TechCorp Inc.',
-      clientEmail: 'events@techcorp.com',
-      clientPhone: '+1 (555) 987-6543',
-      eventType: 'Corporate Event',
-      eventDate: '2024-03-20',
-      eventTime: '19:00',
-      location: 'BGC Convention Center',
-      budget: '₱120,000',
-      status: 'planning',
-      description: 'Annual company gala with modern professional theme. Blue and silver color scheme to match brand colors.',
-      services: ['Stage Design', 'Audio Visual', 'Table Settings', 'Entrance Decor'],
-      createdAt: '2024-01-14T14:20:00Z',
-      lastUpdated: '2024-01-25T16:30:00Z'
-    },
-    {
-      id: '3',
-      title: 'Rodriguez 50th Birthday',
-      clientName: 'Maria Rodriguez',
-      clientEmail: 'maria.rodriguez@email.com',
-      clientPhone: '+1 (555) 456-7890',
-      eventType: 'Birthday Party',
-      eventDate: '2024-02-28',
-      eventTime: '14:00',
-      location: 'Private Residence, Makati',
-      budget: '₱45,000',
-      status: 'in-progress',
-      description: 'Surprise 50th birthday party with vintage theme. Sophisticated decorations for intimate gathering.',
-      services: ['Vintage Decor', 'Balloon Arrangements', 'Photo Booth Setup'],
-      createdAt: '2024-01-13T09:15:00Z',
-      lastUpdated: '2024-02-01T11:20:00Z'
-    },
-    {
-      id: '4',
-      title: 'Kim 25th Anniversary',
-      clientName: 'David & Lisa Kim',
-      clientEmail: 'david.kim@email.com',
-      clientPhone: '+1 (555) 321-0987',
-      eventType: 'Anniversary',
-      eventDate: '2024-04-10',
-      eventTime: '18:30',
-      location: 'Garden Restaurant, Quezon City',
-      budget: '₱75,000',
-      status: 'completed',
-      description: '25th wedding anniversary celebration with romantic garden theme and extensive floral arrangements.',
-      services: ['Floral Arrangements', 'Garden Lighting', 'Table Settings'],
-      createdAt: '2024-01-12T16:45:00Z',
-      lastUpdated: '2024-04-11T10:00:00Z'
-    },
-    {
-      id: '5',
-      title: 'Thompson Graduation Party',
-      clientName: 'Lisa Thompson',
-      clientEmail: 'lisa.thompson@email.com',
-      clientPhone: '+1 (555) 654-3210',
-      eventType: 'Graduation Party',
-      eventDate: '2024-05-05',
-      eventTime: '15:00',
-      location: 'University Club, Diliman',
-      budget: '₱55,000',
-      status: 'cancelled',
-      description: 'Graduation celebration with fun, colorful theme. Event was cancelled due to scheduling conflicts.',
-      services: ['Colorful Decor', 'Balloon Arch', 'Photo Booth'],
-      createdAt: '2024-01-11T13:20:00Z',
-      lastUpdated: '2024-04-20T09:30:00Z'
-    }
-  ]);
+  // Initialize data in localStorage if empty
+  useDataInitialization();
+
+  // Use localStorage for events data
+  const [events, setEvents] = useLocalStorage<Event[]>('admin_events', []);
 
   // Helper functions
   const getStatusColor = (status: string) => {
@@ -384,7 +319,13 @@ export const AdminEventsPage: React.FC = () => {
   ];
 
   // Action handlers
-  const updateEventStatus = (id: string, newStatus: Event['status']) => {
+  const updateEventStatus = async (id: string, newStatus: Event['status']) => {
+    const event = events.find(e => e.id === id);
+    if (!event) return;
+
+    const confirmed = await confirmStatusChange(event.title, newStatus);
+    if (!confirmed) return;
+
     setEvents(prev => prev.map(event =>
       event.id === id
         ? { ...event, status: newStatus, lastUpdated: new Date().toISOString() }
@@ -402,13 +343,71 @@ export const AdminEventsPage: React.FC = () => {
     setIsEditEventDialogOpen(true);
   };
 
-  const deleteEvent = (id: string) => {
+  const deleteEvent = async (id: string) => {
     const event = events.find(e => e.id === id);
+    if (!event) return;
+
+    const confirmed = await confirmDelete(event.title);
+    if (!confirmed) return;
+
     setEvents(prev => prev.filter(event => event.id !== id));
 
     toast({
       title: "Event Deleted",
-      description: `"${event?.title}" has been deleted`,
+      description: `"${event.title}" has been deleted`,
+    });
+  };
+
+  const createEvent = () => {
+    if (!newEventForm.title || !newEventForm.clientName || !newEventForm.eventDate) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields (Title, Client Name, Event Date)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newEvent: Event = {
+      id: Date.now().toString(),
+      title: newEventForm.title,
+      clientName: newEventForm.clientName,
+      clientEmail: newEventForm.clientEmail,
+      clientPhone: newEventForm.clientPhone,
+      eventType: newEventForm.eventType || 'Other',
+      eventDate: newEventForm.eventDate,
+      eventTime: newEventForm.eventTime || '12:00',
+      location: newEventForm.location,
+      budget: newEventForm.budget,
+      status: 'planning',
+      description: newEventForm.description,
+      services: newEventForm.services,
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    };
+
+    setEvents(prev => [newEvent, ...prev]);
+
+    // Reset form
+    setNewEventForm({
+      title: '',
+      clientName: '',
+      clientEmail: '',
+      clientPhone: '',
+      eventType: '',
+      eventDate: '',
+      eventTime: '',
+      location: '',
+      budget: '',
+      description: '',
+      services: []
+    });
+
+    setIsAddEventDialogOpen(false);
+
+    toast({
+      title: "Event Created",
+      description: `"${newEvent.title}" has been added successfully`,
     });
   };
 
@@ -984,15 +983,31 @@ export const AdminEventsPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="clientName">Client Name *</Label>
-                  <Input id="clientName" placeholder="Enter client full name" />
+                  <Input
+                    id="clientName"
+                    placeholder="Enter client full name"
+                    value={newEventForm.clientName}
+                    onChange={(e) => setNewEventForm(prev => ({ ...prev, clientName: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="clientEmail">Email Address *</Label>
-                  <Input id="clientEmail" type="email" placeholder="client@example.com" />
+                  <Input
+                    id="clientEmail"
+                    type="email"
+                    placeholder="client@example.com"
+                    value={newEventForm.clientEmail}
+                    onChange={(e) => setNewEventForm(prev => ({ ...prev, clientEmail: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="clientPhone">Phone Number *</Label>
-                  <Input id="clientPhone" placeholder="+63 XXX XXX XXXX" />
+                  <Input
+                    id="clientPhone"
+                    placeholder="+63 XXX XXX XXXX"
+                    value={newEventForm.clientPhone}
+                    onChange={(e) => setNewEventForm(prev => ({ ...prev, clientPhone: e.target.value }))}
+                  />
                 </div>
               </div>
             </div>
@@ -1005,11 +1020,21 @@ export const AdminEventsPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="eventTitle">Event Title *</Label>
-                  <Input id="eventTitle" placeholder="Enter event title" />
+                  <Input
+                    id="eventTitle"
+                    placeholder="Enter event title"
+                    value={newEventForm.title}
+                    onChange={(e) => setNewEventForm(prev => ({ ...prev, title: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eventType">Event Type *</Label>
-                  <select id="eventType" className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                  <select
+                    id="eventType"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={newEventForm.eventType}
+                    onChange={(e) => setNewEventForm(prev => ({ ...prev, eventType: e.target.value }))}
+                  >
                     <option value="">Select event type</option>
                     <option value="Wedding">Wedding</option>
                     <option value="Corporate">Corporate</option>
@@ -1020,19 +1045,39 @@ export const AdminEventsPage: React.FC = () => {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eventDate">Event Date *</Label>
-                  <Input id="eventDate" type="date" />
+                  <Input
+                    id="eventDate"
+                    type="date"
+                    value={newEventForm.eventDate}
+                    onChange={(e) => setNewEventForm(prev => ({ ...prev, eventDate: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eventTime">Event Time *</Label>
-                  <Input id="eventTime" type="time" />
+                  <Input
+                    id="eventTime"
+                    type="time"
+                    value={newEventForm.eventTime}
+                    onChange={(e) => setNewEventForm(prev => ({ ...prev, eventTime: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="location">Location *</Label>
-                  <Input id="location" placeholder="Event venue/location" />
+                  <Input
+                    id="location"
+                    placeholder="Event venue/location"
+                    value={newEventForm.location}
+                    onChange={(e) => setNewEventForm(prev => ({ ...prev, location: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="budget">Budget *</Label>
-                  <Input id="budget" placeholder="₱50,000" />
+                  <Input
+                    id="budget"
+                    placeholder="₱50,000"
+                    value={newEventForm.budget}
+                    onChange={(e) => setNewEventForm(prev => ({ ...prev, budget: e.target.value }))}
+                  />
                 </div>
               </div>
             </div>
@@ -1089,6 +1134,8 @@ export const AdminEventsPage: React.FC = () => {
                   id="description"
                   placeholder="Provide detailed description of the event requirements, theme, special requests, etc."
                   rows={4}
+                  value={newEventForm.description}
+                  onChange={(e) => setNewEventForm(prev => ({ ...prev, description: e.target.value }))}
                 />
               </div>
             </div>
@@ -1098,13 +1145,7 @@ export const AdminEventsPage: React.FC = () => {
               <Button variant="outline" onClick={() => setIsAddEventDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => {
-                toast({
-                  title: "Event Created",
-                  description: "New event has been added successfully",
-                });
-                setIsAddEventDialogOpen(false);
-              }}>
+              <Button onClick={createEvent}>
                 <Plus className="h-4 w-4 mr-2" />
                 Create Event
               </Button>

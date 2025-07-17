@@ -49,6 +49,7 @@ import {
   Unlock,
 } from 'lucide-react';
 import { COMPANY_INFO, CONTACT_INFO, BUSINESS_HOURS, EVENT_TYPES } from '@/lib/constants';
+import { useAdminActions } from '@/hooks/useAdminActions';
 
 interface BusinessSettings {
   companyName: string;
@@ -93,6 +94,10 @@ interface SecuritySettings {
 
 export const AdminSettingsPage: React.FC = () => {
   const { toast } = useToast();
+  const adminActions = useAdminActions({
+    entityName: 'settings',
+    entityDisplayName: 'Settings'
+  });
   const [activeTab, setActiveTab] = useState('business');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -223,53 +228,53 @@ export const AdminSettingsPage: React.FC = () => {
   };
 
   const resetSettings = () => {
-    // Reset to default values
-    setBusinessSettings({
-      companyName: COMPANY_INFO.NAME,
-      tagline: COMPANY_INFO.TAGLINE,
-      description: COMPANY_INFO.DESCRIPTION,
-      phone: CONTACT_INFO.PHONE,
-      email: CONTACT_INFO.EMAIL,
-      location: CONTACT_INFO.LOCATION,
-      locationDetail: CONTACT_INFO.LOCATION_DETAIL,
-      foundedYear: COMPANY_INFO.FOUNDED_YEAR,
-      businessHours: BUSINESS_HOURS.map(hour => ({ ...hour, enabled: true }))
-    });
+    const performReset = () => {
+      // Reset to default values
+      setBusinessSettings({
+        companyName: COMPANY_INFO.NAME,
+        tagline: COMPANY_INFO.TAGLINE,
+        description: COMPANY_INFO.DESCRIPTION,
+        phone: CONTACT_INFO.PHONE,
+        email: CONTACT_INFO.EMAIL,
+        location: CONTACT_INFO.LOCATION,
+        locationDetail: CONTACT_INFO.LOCATION_DETAIL,
+        foundedYear: COMPANY_INFO.FOUNDED_YEAR,
+        businessHours: BUSINESS_HOURS.map(hour => ({ ...hour, enabled: true }))
+      });
 
-    setNotificationSettings({
-      emailNotifications: true,
-      smsNotifications: false,
-      newInquiries: true,
-      eventReminders: true,
-      clientUpdates: true,
-      systemAlerts: true,
-      marketingEmails: false
-    });
+      setNotificationSettings({
+        emailNotifications: true,
+        smsNotifications: false,
+        newInquiries: true,
+        eventReminders: true,
+        clientUpdates: true,
+        systemAlerts: true,
+        marketingEmails: false
+      });
 
-    setSystemSettings({
-      maintenanceMode: false,
-      autoBackup: true,
-      dataRetention: 365,
-      sessionTimeout: 24,
-      maxFileSize: 10,
-      allowRegistration: true,
-      requireApproval: false
-    });
+      setSystemSettings({
+        maintenanceMode: false,
+        autoBackup: true,
+        dataRetention: 365,
+        sessionTimeout: 24,
+        maxFileSize: 10,
+        allowRegistration: true,
+        requireApproval: false
+      });
 
-    setSecuritySettings({
-      twoFactorAuth: false,
-      passwordExpiry: 90,
-      loginAttempts: 5,
-      sessionSecurity: true,
-      auditLogging: true,
-      ipWhitelist: []
-    });
+      setSecuritySettings({
+        twoFactorAuth: false,
+        passwordExpiry: 90,
+        loginAttempts: 5,
+        sessionSecurity: true,
+        auditLogging: true,
+        ipWhitelist: []
+      });
 
-    setHasUnsavedChanges(false);
-    toast({
-      title: "Settings Reset",
-      description: "All settings have been reset to default values.",
-    });
+      setHasUnsavedChanges(false);
+    };
+
+    adminActions.handleReset(performReset);
   };
 
   return (

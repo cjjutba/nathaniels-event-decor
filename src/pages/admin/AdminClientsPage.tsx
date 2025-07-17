@@ -62,6 +62,9 @@ import {
   CalendarDays,
   Settings,
 } from 'lucide-react';
+import { useAdminActions } from '@/hooks/useAdminActions';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useDataInitialization } from '@/hooks/useDataInitialization';
 
 interface Client {
   id: string;
@@ -91,6 +94,10 @@ interface FilterState {
 
 export const AdminClientsPage: React.FC = () => {
   const { toast } = useToast();
+  const adminActions = useAdminActions({
+    entityName: 'client',
+    entityDisplayName: 'Client'
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -98,6 +105,15 @@ export const AdminClientsPage: React.FC = () => {
   const [isAddClientDialogOpen, setIsAddClientDialogOpen] = useState(false);
   const [isEditClientDialogOpen, setIsEditClientDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [newClientForm, setNewClientForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    preferredServices: [] as string[],
+    notes: '',
+    communicationPreference: 'email' as 'email' | 'phone' | 'both'
+  });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     statuses: [],
@@ -141,117 +157,11 @@ export const AdminClientsPage: React.FC = () => {
 
   const isHighlighted = (itemId: string) => highlightedItemId === itemId;
 
-  // Sample client data based on the events and inquiries
-  const [clients, setClients] = useState<Client[]>([
-    {
-      id: '1',
-      name: 'Sarah & Mike Johnson',
-      email: 'sarah.johnson@email.com',
-      phone: '+1 (555) 123-4567',
-      location: 'Manila, Philippines',
-      status: 'vip',
-      joinDate: '2024-01-15',
-      lastActivity: '2024-01-20T14:45:00Z',
-      totalEvents: 3,
-      totalSpent: '₱540,000',
-      preferredServices: ['Wedding Planning', 'Floral Arrangements', 'Lighting Design'],
-      notes: 'VIP client with multiple high-value events. Prefers elegant, classic themes with white and gold color schemes.',
-      rating: 5,
-      communicationPreference: 'email',
-      createdAt: '2024-01-15T10:30:00Z',
-      lastUpdated: '2024-01-20T14:45:00Z'
-    },
-    {
-      id: '2',
-      name: 'Maria Rodriguez',
-      email: 'maria.rodriguez@email.com',
-      phone: '+1 (555) 456-7890',
-      location: 'Makati, Philippines',
-      status: 'active',
-      joinDate: '2024-01-13',
-      lastActivity: '2024-02-01T11:20:00Z',
-      totalEvents: 2,
-      totalSpent: '₱90,000',
-      preferredServices: ['Birthday Celebrations', 'Vintage Decor', 'Photo Booth Setup'],
-      notes: 'Loves vintage themes and intimate gatherings. Very detail-oriented and appreciates personalized touches.',
-      rating: 4.8,
-      communicationPreference: 'phone',
-      createdAt: '2024-01-13T09:15:00Z',
-      lastUpdated: '2024-02-01T11:20:00Z'
-    },
-    {
-      id: '3',
-      name: 'TechCorp Inc.',
-      email: 'events@techcorp.com',
-      phone: '+1 (555) 987-6543',
-      location: 'BGC, Philippines',
-      status: 'active',
-      joinDate: '2024-01-14',
-      lastActivity: '2024-01-25T16:30:00Z',
-      totalEvents: 4,
-      totalSpent: '₱480,000',
-      preferredServices: ['Corporate Events', 'Professional Staging', 'Audio Visual', 'Brand Integration'],
-      notes: 'Corporate client with regular annual events. Prefers modern, professional themes with brand color integration.',
-      rating: 4.9,
-      communicationPreference: 'email',
-      createdAt: '2024-01-14T14:20:00Z',
-      lastUpdated: '2024-01-25T16:30:00Z'
-    },
-    {
-      id: '4',
-      name: 'David & Lisa Kim',
-      email: 'david.kim@email.com',
-      phone: '+1 (555) 321-0987',
-      location: 'Quezon City, Philippines',
-      status: 'active',
-      joinDate: '2024-01-12',
-      lastActivity: '2024-04-11T10:00:00Z',
-      totalEvents: 1,
-      totalSpent: '₱75,000',
-      preferredServices: ['Anniversary Celebrations', 'Garden Lighting', 'Romantic Themes'],
-      notes: 'Celebrated 25th anniversary with us. Loves romantic, garden-themed events with extensive floral arrangements.',
-      rating: 4.7,
-      communicationPreference: 'both',
-      createdAt: '2024-01-12T16:45:00Z',
-      lastUpdated: '2024-04-11T10:00:00Z'
-    },
-    {
-      id: '5',
-      name: 'Lisa Thompson',
-      email: 'lisa.thompson@email.com',
-      phone: '+1 (555) 654-3210',
-      location: 'Diliman, Philippines',
-      status: 'inactive',
-      joinDate: '2024-01-11',
-      lastActivity: '2024-04-20T09:30:00Z',
-      totalEvents: 0,
-      totalSpent: '₱0',
-      preferredServices: ['Graduation Parties', 'Colorful Decor', 'Photo Booth'],
-      notes: 'Cancelled graduation event due to scheduling conflicts. May be interested in future events.',
-      rating: 0,
-      communicationPreference: 'email',
-      createdAt: '2024-01-11T13:20:00Z',
-      lastUpdated: '2024-04-20T09:30:00Z'
-    },
-    {
-      id: '6',
-      name: 'Cultural Association',
-      email: 'info@culturalassoc.org',
-      phone: '+1 (555) 789-0123',
-      location: 'Manila, Philippines',
-      status: 'active',
-      joinDate: '2024-01-10',
-      lastActivity: '2024-01-15T18:20:00Z',
-      totalEvents: 2,
-      totalSpent: '₱70,000',
-      preferredServices: ['Cultural Events', 'Traditional Decor', 'Festive Lighting'],
-      notes: 'Organization focused on cultural celebrations. Appreciates authentic traditional decorations and cultural sensitivity.',
-      rating: 4.6,
-      communicationPreference: 'email',
-      createdAt: '2024-01-10T08:30:00Z',
-      lastUpdated: '2024-01-15T18:20:00Z'
-    }
-  ]);
+  // Initialize data in localStorage if empty
+  useDataInitialization();
+
+  // Use localStorage for clients data
+  const [clients, setClients] = useLocalStorage<Client[]>('admin_clients', []);
 
   // Helper functions
   const getStatusColor = (status: string) => {
@@ -427,16 +337,13 @@ export const AdminClientsPage: React.FC = () => {
 
   // Action handlers
   const updateClientStatus = (id: string, newStatus: Client['status']) => {
-    setClients(prev => prev.map(client =>
-      client.id === id
-        ? { ...client, status: newStatus, lastUpdated: new Date().toISOString() }
-        : client
-    ));
-
-    toast({
-      title: "Status Updated",
-      description: `Client status changed to ${newStatus}`,
-    });
+    adminActions.handleStatusChange(
+      id,
+      newStatus,
+      clients,
+      setClients,
+      (client) => client.name
+    );
   };
 
   const editClient = (client: Client) => {
@@ -445,12 +352,61 @@ export const AdminClientsPage: React.FC = () => {
   };
 
   const deleteClient = (id: string) => {
-    const client = clients.find(c => c.id === id);
-    setClients(prev => prev.filter(client => client.id !== id));
+    adminActions.handleDelete(
+      id,
+      clients,
+      setClients,
+      (client) => client.name
+    );
+  };
+
+  const createClient = () => {
+    if (!newClientForm.name || !newClientForm.email) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields (Name, Email)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const newClient: Client = {
+      id: Date.now().toString(),
+      name: newClientForm.name,
+      email: newClientForm.email,
+      phone: newClientForm.phone,
+      location: newClientForm.location || 'Not specified',
+      status: 'active',
+      joinDate: new Date().toISOString().split('T')[0],
+      lastActivity: new Date().toISOString(),
+      totalEvents: 0,
+      totalSpent: '₱0',
+      preferredServices: newClientForm.preferredServices,
+      notes: newClientForm.notes,
+      rating: 0,
+      communicationPreference: newClientForm.communicationPreference,
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    };
+
+    setClients(prev => [newClient, ...prev]);
+
+    // Reset form
+    setNewClientForm({
+      name: '',
+      email: '',
+      phone: '',
+      location: '',
+      preferredServices: [],
+      notes: '',
+      communicationPreference: 'email'
+    });
+
+    setIsAddClientDialogOpen(false);
 
     toast({
-      title: "Client Deleted",
-      description: `"${client?.name}" has been deleted`,
+      title: "Client Added",
+      description: `"${newClient.name}" has been added successfully`,
     });
   };
 
@@ -1100,47 +1056,73 @@ export const AdminClientsPage: React.FC = () => {
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Client Name</Label>
-                <Input id="name" placeholder="Enter client name" />
+                <Label htmlFor="name">Client Name *</Label>
+                <Input
+                  id="name"
+                  placeholder="Enter client name"
+                  value={newClientForm.name}
+                  onChange={(e) => setNewClientForm(prev => ({ ...prev, name: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="Enter email address" />
+                <Label htmlFor="email">Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter email address"
+                  value={newClientForm.email}
+                  onChange={(e) => setNewClientForm(prev => ({ ...prev, email: e.target.value }))}
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="Enter phone number" />
+                <Input
+                  id="phone"
+                  placeholder="Enter phone number"
+                  value={newClientForm.phone}
+                  onChange={(e) => setNewClientForm(prev => ({ ...prev, phone: e.target.value }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
-                <Input id="location" placeholder="Enter location" />
+                <Input
+                  id="location"
+                  placeholder="Enter location"
+                  value={newClientForm.location}
+                  onChange={(e) => setNewClientForm(prev => ({ ...prev, location: e.target.value }))}
+                />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="services">Preferred Services (comma separated)</Label>
-              <Input id="services" placeholder="Wedding Planning, Corporate Events, etc." />
+              <Input
+                id="services"
+                placeholder="Wedding Planning, Corporate Events, etc."
+                value={newClientForm.preferredServices.join(', ')}
+                onChange={(e) => setNewClientForm(prev => ({ ...prev, preferredServices: e.target.value.split(',').map(s => s.trim()).filter(s => s) }))}
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
-              <Textarea id="notes" placeholder="Enter any notes about the client" rows={3} />
+              <Textarea
+                id="notes"
+                placeholder="Enter any notes about the client"
+                rows={3}
+                value={newClientForm.notes}
+                onChange={(e) => setNewClientForm(prev => ({ ...prev, notes: e.target.value }))}
+              />
             </div>
 
             <div className="flex items-center justify-end space-x-2 pt-4">
               <Button variant="outline" onClick={() => setIsAddClientDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={() => {
-                toast({
-                  title: "Client Added",
-                  description: "New client has been registered successfully",
-                });
-                setIsAddClientDialogOpen(false);
-              }}>
+              <Button onClick={createClient}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Client
               </Button>

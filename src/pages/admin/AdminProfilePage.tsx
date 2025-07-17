@@ -61,6 +61,7 @@ import {
   Tablet,
 } from 'lucide-react';
 import { DEMO_CREDENTIALS } from '@/lib/constants';
+import { useAdminActions } from '@/hooks/useAdminActions';
 
 interface AdminProfile {
   id: string;
@@ -111,6 +112,10 @@ interface NotificationPreferences {
 
 export const AdminProfilePage: React.FC = () => {
   const { toast } = useToast();
+  const adminActions = useAdminActions({
+    entityName: 'profile',
+    entityDisplayName: 'Profile'
+  });
   const [activeTab, setActiveTab] = useState('profile');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -317,12 +322,16 @@ export const AdminProfilePage: React.FC = () => {
   };
 
   const changePassword = () => {
-    // In a real application, this would change the password
-    toast({
-      title: "Password Changed",
-      description: "Your password has been changed successfully.",
-    });
-    setIsChangePasswordDialogOpen(false);
+    const performPasswordChange = () => {
+      // In a real application, this would change the password
+      setIsChangePasswordDialogOpen(false);
+    };
+
+    adminActions.handleSecurityAction(
+      "Password Change",
+      performPasswordChange,
+      "Are you sure you want to change your password? This is a security-sensitive action that will require you to log in again."
+    );
   };
 
   return (

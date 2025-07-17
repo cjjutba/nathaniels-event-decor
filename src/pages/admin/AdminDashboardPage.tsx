@@ -11,6 +11,14 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
   ClipboardList,
   CalendarDays,
   Users,
@@ -29,6 +37,7 @@ import {
 } from 'lucide-react';
 import { PATHS } from '@/lib/constants';
 import { RecentActivitiesModal } from '@/components/admin/RecentActivitiesModal';
+import { useDeleteConfirmation, useStatusChangeConfirmation } from '@/contexts/ConfirmationContext';
 
 interface AdminDashboardPageProps {
   navigate: (path: string) => void;
@@ -36,6 +45,9 @@ interface AdminDashboardPageProps {
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate }) => {
   const [isActivitiesModalOpen, setIsActivitiesModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<typeof upcomingEvents[0] | null>(null);
+  const confirmDelete = useDeleteConfirmation();
+  const confirmStatusChange = useStatusChangeConfirmation();
   const [upcomingEvents, setUpcomingEvents] = useState([
     {
       id: '1',
@@ -65,7 +77,13 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
   const { toast } = useToast();
 
   // CRUD operation handlers
-  const updateEventStatus = (id: string, newStatus: 'confirmed' | 'planning' | 'in-progress' | 'completed') => {
+  const updateEventStatus = async (id: string, newStatus: 'confirmed' | 'planning' | 'in-progress' | 'completed') => {
+    const event = upcomingEvents.find(e => e.id === id);
+    if (!event) return;
+
+    const confirmed = await confirmStatusChange(event.title, newStatus);
+    if (!confirmed) return;
+
     setUpcomingEvents(prev => prev.map(event =>
       event.id === id ? { ...event, status: newStatus } : event
     ));
@@ -76,22 +94,23 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
     });
   };
 
-  const deleteEvent = (id: string) => {
+  const deleteEvent = async (id: string) => {
     const event = upcomingEvents.find(e => e.id === id);
+    if (!event) return;
+
+    const confirmed = await confirmDelete(event.title);
+    if (!confirmed) return;
+
     setUpcomingEvents(prev => prev.filter(event => event.id !== id));
 
     toast({
       title: "Event Deleted",
-      description: `"${event?.title}" has been deleted`,
+      description: `"${event.title}" has been deleted`,
     });
   };
 
   const viewEventDetails = (event: typeof upcomingEvents[0]) => {
-    toast({
-      title: "View Details",
-      description: `Opening details for "${event.title}"`,
-    });
-    // In a real app, this would open a modal or navigate to details page
+    setSelectedEvent(event);
   };
 
   const editEvent = (event: typeof upcomingEvents[0]) => {
@@ -402,6 +421,64 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
         isOpen={isActivitiesModalOpen}
         onClose={() => setIsActivitiesModalOpen(false)}
       />
+
+      {/* Event Details Modal */}
+      <Dialog open={!!selectedEvent} onOpenChange={() => setSelectedEvent(null)}>
+        <DialogContent className="max-w-2xl">
+          {selectedEvent && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center space-x-2">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                  <span>{selectedEvent.title}</span>
+                </DialogTitle>
+                <DialogDescription>
+                  Event details and information
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Client</Label>
+                    <p className="text-sm font-medium">{selectedEvent.client}</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+                    <Badge variant={selectedEvent.status === 'confirmed' ? 'default' : 'secondary'}>
+                      {selectedEvent.status}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Date</Label>
+                    <div className="flex items-center space-x-2">
+                      <CalendarDays className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{selectedEvent.date}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Time</Label>
+                    <div className="flex items-center space-x-2">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm">{selectedEvent.time}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setSelectedEvent(null)}>
+                  Close
+                </Button>
+                <Button onClick={() => navigate(PATHS.ADMIN_EVENTS)}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Manage Event
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

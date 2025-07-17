@@ -5,6 +5,7 @@ import { useAdminSidebar } from '@/hooks/useSidebar';
 import { SearchProvider } from '@/contexts/SearchContext';
 import { SearchDataProvider } from '@/components/admin/SearchDataProvider';
 import { LoadingProvider, useLoading } from '@/contexts/LoadingContext';
+import { ConfirmationProvider } from '@/contexts/ConfirmationContext';
 import { GlobalLoading } from '@/components/ui/global-loading';
 
 interface AdminLayoutProps {
@@ -95,11 +96,13 @@ const AdminLayoutContent: React.FC<AdminLayoutProps> = ({
 export const AdminLayout: React.FC<AdminLayoutProps> = (props) => {
   return (
     <LoadingProvider>
-      <SearchProvider>
-        <SearchDataProvider>
-          <AdminLayoutContent {...props} />
-        </SearchDataProvider>
-      </SearchProvider>
+      <ConfirmationProvider>
+        <SearchProvider>
+          <SearchDataProvider>
+            <AdminLayoutContent {...props} />
+          </SearchDataProvider>
+        </SearchProvider>
+      </ConfirmationProvider>
     </LoadingProvider>
   );
 };
