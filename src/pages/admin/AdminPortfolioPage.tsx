@@ -323,13 +323,13 @@ export const AdminPortfolioPage: React.FC = () => {
   ];
 
   // Action handlers
-  const updateItemStatus = (id: string, newStatus: PortfolioItem['status']) => {
+  const updateItemStatus = async (id: string, newStatus: PortfolioItem['status']) => {
     const item = portfolioItems.find(i => i.id === id);
     if (!item) return;
 
     const oldStatus = item.status;
 
-    adminActions.handleStatusChange(
+    const success = await adminActions.handleStatusChange(
       id,
       newStatus,
       portfolioItems,
@@ -337,40 +337,44 @@ export const AdminPortfolioPage: React.FC = () => {
       (item) => item.title
     );
 
-    // Add notification for status change
-    addNotification(createPortfolioNotifications.updated(item.title, item.id));
+    // Only add notification if status change was confirmed and successful
+    if (success) {
+      addNotification(createPortfolioNotifications.updated(item.title, item.id));
+    }
   };
 
-  const toggleFeatured = (id: string) => {
+  const toggleFeatured = async (id: string) => {
     const item = portfolioItems.find(i => i.id === id);
     if (!item) return;
 
-    adminActions.handleFeatureToggle(
+    const success = await adminActions.handleFeatureToggle(
       id,
       portfolioItems,
       setPortfolioItems,
       (item) => item.title
     );
 
-    // Add notification for feature toggle
-    if (!item.featured) {
+    // Only add notification if feature toggle was confirmed and successful
+    if (success && !item.featured) {
       addNotification(createPortfolioNotifications.featured(item.title, item.id));
     }
   };
 
-  const deleteItem = (id: string) => {
+  const deleteItem = async (id: string) => {
     const item = portfolioItems.find(i => i.id === id);
     if (!item) return;
 
-    adminActions.handleDelete(
+    const success = await adminActions.handleDelete(
       id,
       portfolioItems,
       setPortfolioItems,
       (item) => item.title
     );
 
-    // Add notification for deletion
-    addNotification(createPortfolioNotifications.deleted(item.title, item.id));
+    // Only add notification if deletion was confirmed and successful
+    if (success) {
+      addNotification(createPortfolioNotifications.deleted(item.title, item.id));
+    }
   };
 
   const createItem = () => {
@@ -426,6 +430,53 @@ export const AdminPortfolioPage: React.FC = () => {
   const editItem = (item: PortfolioItem) => {
     setEditingItem(item);
     setIsEditItemDialogOpen(true);
+  };
+
+  const updateItem = () => {
+    if (!editingItem) return;
+
+    // Get form values
+    const titleInput = document.getElementById('editItemTitle') as HTMLInputElement;
+    const categorySelect = document.getElementById('editItemCategory') as HTMLSelectElement;
+    const eventDateInput = document.getElementById('editItemEventDate') as HTMLInputElement;
+    const clientNameInput = document.getElementById('editItemClientName') as HTMLInputElement;
+    const descriptionTextarea = document.getElementById('editItemDescription') as HTMLTextAreaElement;
+    const tagsInput = document.getElementById('editItemTags') as HTMLInputElement;
+
+    if (!titleInput?.value || !categorySelect?.value || !descriptionTextarea?.value) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields (Title, Category, Description)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedItem: PortfolioItem = {
+      ...editingItem,
+      title: titleInput.value,
+      category: categorySelect.value,
+      eventDate: eventDateInput?.value || editingItem.eventDate,
+      clientName: clientNameInput?.value || editingItem.clientName,
+      description: descriptionTextarea.value,
+      tags: tagsInput?.value ? tagsInput.value.split(',').map(t => t.trim()).filter(t => t) : editingItem.tags,
+      lastUpdated: new Date().toISOString()
+    };
+
+    setPortfolioItems(prev => prev.map(item =>
+      item.id === editingItem.id ? updatedItem : item
+    ));
+
+    // Add notification for update
+    addNotification(createPortfolioNotifications.updated(updatedItem.title, updatedItem.id));
+
+    toast({
+      title: "Portfolio Item Updated",
+      description: `"${updatedItem.title}" has been updated successfully`,
+    });
+
+    setIsEditItemDialogOpen(false);
+    setEditingItem(null);
   };
 
   return (
@@ -1205,14 +1256,7 @@ export const AdminPortfolioPage: React.FC = () => {
                 <Button variant="outline" onClick={() => setIsEditItemDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => {
-                  toast({
-                    title: "Portfolio Item Updated",
-                    description: "Portfolio item has been updated successfully",
-                  });
-                  setIsEditItemDialogOpen(false);
-                  setEditingItem(null);
-                }}>
+                <Button onClick={updateItem}>
                   <Edit className="h-4 w-4 mr-2" />
                   Update Item
                 </Button>

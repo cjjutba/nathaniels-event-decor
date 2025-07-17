@@ -356,6 +356,55 @@ export const AdminEventsPage: React.FC = () => {
     setIsEditEventDialogOpen(true);
   };
 
+  const updateEvent = () => {
+    if (!editingEvent) return;
+
+    // Get form values
+    const titleInput = document.getElementById('editEventTitle') as HTMLInputElement;
+    const clientNameInput = document.getElementById('editClientName') as HTMLInputElement;
+    const eventDateInput = document.getElementById('editEventDate') as HTMLInputElement;
+    const eventTimeInput = document.getElementById('editEventTime') as HTMLInputElement;
+    const locationInput = document.getElementById('editLocation') as HTMLInputElement;
+    const budgetInput = document.getElementById('editBudget') as HTMLInputElement;
+    const descriptionTextarea = document.getElementById('editDescription') as HTMLTextAreaElement;
+
+    if (!titleInput?.value || !clientNameInput?.value || !eventDateInput?.value) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields (Title, Client Name, Event Date)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedEvent: Event = {
+      ...editingEvent,
+      title: titleInput.value,
+      clientName: clientNameInput.value,
+      eventDate: eventDateInput.value,
+      eventTime: eventTimeInput?.value || editingEvent.eventTime,
+      location: locationInput?.value || editingEvent.location,
+      budget: budgetInput?.value || editingEvent.budget,
+      description: descriptionTextarea?.value || editingEvent.description,
+      lastUpdated: new Date().toISOString()
+    };
+
+    setEvents(prev => prev.map(event =>
+      event.id === editingEvent.id ? updatedEvent : event
+    ));
+
+    // Add notification for update
+    addNotification(createEventNotifications.updated(updatedEvent.title, updatedEvent.id));
+
+    toast({
+      title: "Event Updated",
+      description: `"${updatedEvent.title}" has been updated successfully`,
+    });
+
+    setIsEditEventDialogOpen(false);
+    setEditingEvent(null);
+  };
+
   const deleteEvent = async (id: string) => {
     const event = events.find(e => e.id === id);
     if (!event) return;
@@ -1286,14 +1335,7 @@ export const AdminEventsPage: React.FC = () => {
                 <Button variant="outline" onClick={() => setIsEditEventDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => {
-                  toast({
-                    title: "Event Updated",
-                    description: "Event details have been updated successfully",
-                  });
-                  setIsEditEventDialogOpen(false);
-                  setEditingEvent(null);
-                }}>
+                <Button onClick={updateEvent}>
                   <Edit className="h-4 w-4 mr-2" />
                   Update Event
                 </Button>

@@ -339,13 +339,13 @@ export const AdminClientsPage: React.FC = () => {
   ];
 
   // Action handlers
-  const updateClientStatus = (id: string, newStatus: Client['status']) => {
+  const updateClientStatus = async (id: string, newStatus: Client['status']) => {
     const client = clients.find(c => c.id === id);
     if (!client) return;
 
     const oldStatus = client.status;
 
-    adminActions.handleStatusChange(
+    const success = await adminActions.handleStatusChange(
       id,
       newStatus,
       clients,
@@ -353,13 +353,15 @@ export const AdminClientsPage: React.FC = () => {
       (client) => client.name
     );
 
-    // Add notification for status change
-    addNotification(createClientNotifications.statusChanged(
-      client.name,
-      oldStatus,
-      newStatus,
-      client.id
-    ));
+    // Only add notification if status change was confirmed and successful
+    if (success) {
+      addNotification(createClientNotifications.statusChanged(
+        client.name,
+        oldStatus,
+        newStatus,
+        client.id
+      ));
+    }
   };
 
   const editClient = (client: Client) => {
@@ -370,39 +372,69 @@ export const AdminClientsPage: React.FC = () => {
   const updateClient = () => {
     if (!editingClient) return;
 
-    // In a real implementation, you would collect form data here
-    // For now, we'll just simulate an update
+    // Get form values
+    const nameInput = document.getElementById('editClientName') as HTMLInputElement;
+    const emailInput = document.getElementById('editClientEmail') as HTMLInputElement;
+    const phoneInput = document.getElementById('editClientPhone') as HTMLInputElement;
+    const companyInput = document.getElementById('editClientCompany') as HTMLInputElement;
+    const locationInput = document.getElementById('editClientLocation') as HTMLInputElement;
+    const statusSelect = document.getElementById('editClientStatus') as HTMLSelectElement;
+    const servicesInput = document.getElementById('editClientServices') as HTMLInputElement;
+    const notesTextarea = document.getElementById('editClientNotes') as HTMLTextAreaElement;
+
+    if (!nameInput?.value || !emailInput?.value || !phoneInput?.value) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields (Name, Email, Phone)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedClient: Client = {
+      ...editingClient,
+      name: nameInput.value,
+      email: emailInput.value,
+      phone: phoneInput.value,
+      company: companyInput?.value || editingClient.company,
+      location: locationInput?.value || editingClient.location,
+      status: (statusSelect?.value as Client['status']) || editingClient.status,
+      preferredServices: servicesInput?.value ? servicesInput.value.split(',').map(s => s.trim()).filter(s => s) : editingClient.preferredServices,
+      notes: notesTextarea?.value || editingClient.notes,
+      lastUpdated: new Date().toISOString()
+    };
+
     setClients(prev => prev.map(client =>
-      client.id === editingClient.id
-        ? { ...client, lastUpdated: new Date().toISOString() }
-        : client
+      client.id === editingClient.id ? updatedClient : client
     ));
 
     // Add notification for update
-    addNotification(createClientNotifications.updated(editingClient.name, editingClient.id));
+    addNotification(createClientNotifications.updated(updatedClient.name, updatedClient.id));
 
     toast({
       title: "Client Updated",
-      description: "Client information has been updated successfully",
+      description: `"${updatedClient.name}" has been updated successfully`,
     });
 
     setIsEditClientDialogOpen(false);
     setEditingClient(null);
   };
 
-  const deleteClient = (id: string) => {
+  const deleteClient = async (id: string) => {
     const client = clients.find(c => c.id === id);
     if (!client) return;
 
-    adminActions.handleDelete(
+    const success = await adminActions.handleDelete(
       id,
       clients,
       setClients,
       (client) => client.name
     );
 
-    // Add notification for deletion
-    addNotification(createClientNotifications.deleted(client.name, client.id));
+    // Only add notification if deletion was confirmed and successful
+    if (success) {
+      addNotification(createClientNotifications.deleted(client.name, client.id));
+    }
   };
 
   const createClient = () => {

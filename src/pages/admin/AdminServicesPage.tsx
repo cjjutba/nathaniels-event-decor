@@ -267,13 +267,13 @@ export const AdminServicesPage: React.FC = () => {
   ];
 
   // Action handlers
-  const updateServiceStatus = (id: string, newStatus: Service['status']) => {
+  const updateServiceStatus = async (id: string, newStatus: Service['status']) => {
     const service = services.find(s => s.id === id);
     if (!service) return;
 
     const oldStatus = service.status;
 
-    adminActions.handleStatusChange(
+    const success = await adminActions.handleStatusChange(
       id,
       newStatus,
       services,
@@ -281,13 +281,15 @@ export const AdminServicesPage: React.FC = () => {
       (service) => service.title
     );
 
-    // Add notification for status change
-    addNotification(createServiceNotifications.statusChanged(
-      service.title,
-      oldStatus,
-      newStatus,
-      service.id
-    ));
+    // Only add notification if status change was confirmed and successful
+    if (success) {
+      addNotification(createServiceNotifications.statusChanged(
+        service.title,
+        oldStatus,
+        newStatus,
+        service.id
+      ));
+    }
   };
 
   const editService = (service: Service) => {
@@ -295,19 +297,66 @@ export const AdminServicesPage: React.FC = () => {
     setIsEditServiceDialogOpen(true);
   };
 
-  const deleteService = (id: string) => {
+  const updateService = () => {
+    if (!editingService) return;
+
+    // Get form values
+    const titleInput = document.getElementById('editServiceTitle') as HTMLInputElement;
+    const categorySelect = document.getElementById('editServiceCategory') as HTMLSelectElement;
+    const priceInput = document.getElementById('editServicePrice') as HTMLInputElement;
+    const descriptionTextarea = document.getElementById('editServiceDescription') as HTMLTextAreaElement;
+    const featuresTextarea = document.getElementById('editServiceFeatures') as HTMLTextAreaElement;
+
+    if (!titleInput?.value || !categorySelect?.value || !descriptionTextarea?.value) {
+      toast({
+        title: "Missing Information",
+        description: "Please fill in all required fields (Title, Category, Description)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const updatedService: Service = {
+      ...editingService,
+      title: titleInput.value,
+      category: categorySelect.value,
+      basePrice: priceInput?.value || editingService.basePrice,
+      description: descriptionTextarea.value,
+      features: featuresTextarea?.value ? featuresTextarea.value.split(',').map(f => f.trim()).filter(f => f) : editingService.features,
+      lastUpdated: new Date().toISOString()
+    };
+
+    setServices(prev => prev.map(service =>
+      service.id === editingService.id ? updatedService : service
+    ));
+
+    // Add notification for update
+    addNotification(createServiceNotifications.updated(updatedService.title, updatedService.id));
+
+    toast({
+      title: "Service Updated",
+      description: `"${updatedService.title}" has been updated successfully`,
+    });
+
+    setIsEditServiceDialogOpen(false);
+    setEditingService(null);
+  };
+
+  const deleteService = async (id: string) => {
     const service = services.find(s => s.id === id);
     if (!service) return;
 
-    adminActions.handleDelete(
+    const success = await adminActions.handleDelete(
       id,
       services,
       setServices,
       (service) => service.title
     );
 
-    // Add notification for deletion
-    addNotification(createServiceNotifications.deleted(service.title, service.id));
+    // Only add notification if deletion was confirmed and successful
+    if (success) {
+      addNotification(createServiceNotifications.deleted(service.title, service.id));
+    }
   };
 
   const createService = () => {
@@ -711,7 +760,7 @@ export const AdminServicesPage: React.FC = () => {
                                   <Eye className="h-4 w-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => editService(service)}>
                                   <Edit className="h-4 w-4 mr-2" />
                                   Edit Service
                                 </DropdownMenuItem>
@@ -1072,12 +1121,8 @@ export const AdminServicesPage: React.FC = () => {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="editServicePrice">Price *</Label>
-                  <Input id="editServicePrice" defaultValue={editingService.price} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="editServiceDuration">Duration</Label>
-                  <Input id="editServiceDuration" defaultValue={editingService.duration} placeholder="e.g., 8 hours" />
+                  <Label htmlFor="editServicePrice">Base Price *</Label>
+                  <Input id="editServicePrice" defaultValue={editingService.basePrice} />
                 </div>
               </div>
 
@@ -1104,14 +1149,7 @@ export const AdminServicesPage: React.FC = () => {
                 <Button variant="outline" onClick={() => setIsEditServiceDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => {
-                  toast({
-                    title: "Service Updated",
-                    description: "Service details have been updated successfully",
-                  });
-                  setIsEditServiceDialogOpen(false);
-                  setEditingService(null);
-                }}>
+                <Button onClick={updateService}>
                   <Edit className="h-4 w-4 mr-2" />
                   Update Service
                 </Button>
