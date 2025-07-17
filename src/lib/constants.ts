@@ -69,7 +69,7 @@ export const COMPANY_INFO = {
   TAGLINE: 'Crafting unforgettable moments with premium event planning and decor services',
   DESCRIPTION: 'Your vision, our expertise, exceptional results.',
   FOUNDED_YEAR: 2018,
-  COPYRIGHT: '© 2024 Nathaniel\'s Event & Decor. All rights reserved.',
+  COPYRIGHT: '© 2025 Nathaniel\'s Event & Decor. All rights reserved.',
 } as const;
 
 // Session storage keys

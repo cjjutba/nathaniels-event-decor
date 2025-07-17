@@ -12,6 +12,8 @@ import {
   CircleUser,
   ChevronLeft,
   ChevronRight,
+  Heart,
+  Sparkles,
 } from 'lucide-react';
 import { PATHS, COMPANY_INFO } from '@/lib/constants';
 import { useAdminSidebar } from '@/hooks/useSidebar';
@@ -47,18 +49,26 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
 
   const NavItem: React.FC<{ item: typeof adminNavItems[0] }> = ({ item }) => {
     const isActive = currentPage === item.path;
-    
+
+    const handleClick = React.useCallback((e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      console.log('NavItem clicked:', item.path);
+      navigate(item.path);
+    }, [item.path, navigate]);
+
     const buttonContent = (
       <Button
         variant="ghost"
-        className={`w-full transition-all duration-200 ${
+        className={`w-full transition-all duration-200 select-none ${
           isCollapsed ? 'justify-center px-2' : 'justify-start px-3'
         } ${
           isActive
             ? "bg-primary text-primary-foreground shadow-sm"
             : "text-muted-foreground hover:bg-muted hover:text-foreground"
         }`}
-        onClick={() => navigate(item.path)}
+        onClick={handleClick}
+        onMouseDown={(e) => e.preventDefault()} // Prevent focus issues
       >
         <item.icon className={`h-5 w-5 ${isCollapsed ? '' : 'mr-3'} flex-shrink-0`} />
         {!isCollapsed && (
@@ -72,7 +82,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
     if (isCollapsed) {
       return (
         <TooltipProvider>
-          <Tooltip delayDuration={0}>
+          <Tooltip delayDuration={100}>
             <TooltipTrigger asChild>
               {buttonContent}
             </TooltipTrigger>
@@ -98,6 +108,8 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         willChange: 'width, transform',
         backfaceVisibility: 'hidden',
         transform: 'translateZ(0)',
+        // Improve touch responsiveness
+        touchAction: 'manipulation',
       }}
     >
       
@@ -106,10 +118,16 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {!isCollapsed ? (
           <div className="flex items-center justify-between">
             <div className="min-w-0 flex-1">
-              <h2 className="text-lg font-bold text-foreground truncate">
-                <span className="text-primary">Admin</span>
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1 truncate">
+              <div className="flex items-center space-x-2 mb-1">
+                <div className="relative">
+                  <Heart className="h-5 w-5 text-primary fill-current" />
+                  <Sparkles className="h-2.5 w-2.5 text-primary/60 absolute -top-0.5 -right-0.5 animate-pulse" />
+                </div>
+                <h2 className="text-lg font-bold text-foreground truncate">
+                  <span className="text-primary">Admin</span>
+                </h2>
+              </div>
+              <p className="text-xs text-muted-foreground truncate">
                 {COMPANY_INFO.NAME}
               </p>
             </div>
@@ -126,7 +144,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             </Button>
           </div>
         ) : (
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center space-y-2">
+            <div className="relative">
+              <Heart className="h-6 w-6 text-primary fill-current" />
+              <Sparkles className="h-3 w-3 text-primary/60 absolute -top-1 -right-1 animate-pulse" />
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -134,17 +156,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 console.log('Expand button clicked');
                 toggleSidebar();
               }}
-              className="h-8 w-8 p-0 hover:bg-muted"
+              className="h-6 w-6 p-0 hover:bg-muted"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3" />
             </Button>
           </div>
         )}
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 py-4 overflow-y-auto">
-        <nav className={`space-y-1 ${isCollapsed ? 'px-2' : 'px-3'}`}>
+      <div className="flex-1 py-4 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
+        <nav className={`space-y-1 ${isCollapsed ? 'px-2' : 'px-3'}`} role="navigation" aria-label="Admin navigation">
           {adminNavItems.map((item) => (
             <NavItem key={item.path} item={item} />
           ))}
@@ -156,12 +178,12 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
         {!isCollapsed ? (
           <div className="text-center">
             <p className="text-xs text-muted-foreground truncate">
-              © 2024 {COMPANY_INFO.NAME}
+              © 2025 {COMPANY_INFO.NAME}
             </p>
           </div>
         ) : (
           <div className="flex justify-center">
-            <div className="w-2 h-2 bg-primary rounded-full"></div>
+            <Heart className="h-4 w-4 text-primary fill-current" />
           </div>
         )}
       </div>

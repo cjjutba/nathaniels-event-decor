@@ -749,38 +749,6 @@ export const AdminServicesPage: React.FC = () => {
                                 {service.description}
                               </CardDescription>
                             </div>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem onClick={() => setSelectedService(service)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => editService(service)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Service
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateServiceStatus(service.id, 'active')}>
-                                  <CheckCircle className="h-4 w-4 mr-2" />
-                                  Mark Active
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => updateServiceStatus(service.id, 'inactive')}>
-                                  <X className="h-4 w-4 mr-2" />
-                                  Mark Inactive
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => deleteService(service.id)}
-                                  className="text-destructive focus:text-destructive"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
                           </div>
                         </CardHeader>
 
