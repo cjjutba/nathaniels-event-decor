@@ -65,6 +65,8 @@ import {
 import { useAdminActions } from '@/hooks/useAdminActions';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDataInitialization } from '@/hooks/useDataInitialization';
+import { useNotificationContext } from '@/contexts/NotificationContext';
+import { createClientNotifications } from '@/utils/notificationHelpers';
 
 interface Client {
   id: string;
@@ -94,6 +96,7 @@ interface FilterState {
 
 export const AdminClientsPage: React.FC = () => {
   const { toast } = useToast();
+  const { addNotification } = useNotificationContext();
   const adminActions = useAdminActions({
     entityName: 'client',
     entityDisplayName: 'Client'
@@ -337,6 +340,11 @@ export const AdminClientsPage: React.FC = () => {
 
   // Action handlers
   const updateClientStatus = (id: string, newStatus: Client['status']) => {
+    const client = clients.find(c => c.id === id);
+    if (!client) return;
+
+    const oldStatus = client.status;
+
     adminActions.handleStatusChange(
       id,
       newStatus,
@@ -344,6 +352,14 @@ export const AdminClientsPage: React.FC = () => {
       setClients,
       (client) => client.name
     );
+
+    // Add notification for status change
+    addNotification(createClientNotifications.statusChanged(
+      client.name,
+      oldStatus,
+      newStatus,
+      client.id
+    ));
   };
 
   const editClient = (client: Client) => {
@@ -351,13 +367,42 @@ export const AdminClientsPage: React.FC = () => {
     setIsEditClientDialogOpen(true);
   };
 
+  const updateClient = () => {
+    if (!editingClient) return;
+
+    // In a real implementation, you would collect form data here
+    // For now, we'll just simulate an update
+    setClients(prev => prev.map(client =>
+      client.id === editingClient.id
+        ? { ...client, lastUpdated: new Date().toISOString() }
+        : client
+    ));
+
+    // Add notification for update
+    addNotification(createClientNotifications.updated(editingClient.name, editingClient.id));
+
+    toast({
+      title: "Client Updated",
+      description: "Client information has been updated successfully",
+    });
+
+    setIsEditClientDialogOpen(false);
+    setEditingClient(null);
+  };
+
   const deleteClient = (id: string) => {
+    const client = clients.find(c => c.id === id);
+    if (!client) return;
+
     adminActions.handleDelete(
       id,
       clients,
       setClients,
       (client) => client.name
     );
+
+    // Add notification for deletion
+    addNotification(createClientNotifications.deleted(client.name, client.id));
   };
 
   const createClient = () => {
@@ -390,6 +435,9 @@ export const AdminClientsPage: React.FC = () => {
     };
 
     setClients(prev => [newClient, ...prev]);
+
+    // Add notification
+    addNotification(createClientNotifications.created(newClient.name, newClient.id));
 
     // Reset form
     setNewClientForm({
@@ -1197,14 +1245,7 @@ export const AdminClientsPage: React.FC = () => {
                 <Button variant="outline" onClick={() => setIsEditClientDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={() => {
-                  toast({
-                    title: "Client Updated",
-                    description: "Client information has been updated successfully",
-                  });
-                  setIsEditClientDialogOpen(false);
-                  setEditingClient(null);
-                }}>
+                <Button onClick={updateClient}>
                   <Edit className="h-4 w-4 mr-2" />
                   Update Client
                 </Button>

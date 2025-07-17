@@ -60,6 +60,8 @@ import {
 import { useAdminActions } from '@/hooks/useAdminActions';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDataInitialization } from '@/hooks/useDataInitialization';
+import { useNotificationContext } from '@/contexts/NotificationContext';
+import { createServiceNotifications } from '@/utils/notificationHelpers';
 
 interface Service {
   id: string;
@@ -86,6 +88,7 @@ interface FilterState {
 
 export const AdminServicesPage: React.FC = () => {
   const { toast } = useToast();
+  const { addNotification } = useNotificationContext();
   const adminActions = useAdminActions({
     entityName: 'service',
     entityDisplayName: 'Service'
@@ -265,6 +268,11 @@ export const AdminServicesPage: React.FC = () => {
 
   // Action handlers
   const updateServiceStatus = (id: string, newStatus: Service['status']) => {
+    const service = services.find(s => s.id === id);
+    if (!service) return;
+
+    const oldStatus = service.status;
+
     adminActions.handleStatusChange(
       id,
       newStatus,
@@ -272,6 +280,14 @@ export const AdminServicesPage: React.FC = () => {
       setServices,
       (service) => service.title
     );
+
+    // Add notification for status change
+    addNotification(createServiceNotifications.statusChanged(
+      service.title,
+      oldStatus,
+      newStatus,
+      service.id
+    ));
   };
 
   const editService = (service: Service) => {
@@ -280,12 +296,18 @@ export const AdminServicesPage: React.FC = () => {
   };
 
   const deleteService = (id: string) => {
+    const service = services.find(s => s.id === id);
+    if (!service) return;
+
     adminActions.handleDelete(
       id,
       services,
       setServices,
       (service) => service.title
     );
+
+    // Add notification for deletion
+    addNotification(createServiceNotifications.deleted(service.title, service.id));
   };
 
   const createService = () => {
@@ -316,6 +338,9 @@ export const AdminServicesPage: React.FC = () => {
     };
 
     setServices(prev => [newService, ...prev]);
+
+    // Add notification for creation
+    addNotification(createServiceNotifications.created(newService.title, newService.id));
 
     // Reset form
     setNewServiceForm({

@@ -6,6 +6,7 @@ import { SearchProvider } from '@/contexts/SearchContext';
 import { SearchDataProvider } from '@/components/admin/SearchDataProvider';
 import { LoadingProvider, useLoading } from '@/contexts/LoadingContext';
 import { ConfirmationProvider } from '@/contexts/ConfirmationContext';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 import { GlobalLoading } from '@/components/ui/global-loading';
 
 interface AdminLayoutProps {
@@ -97,11 +98,13 @@ export const AdminLayout: React.FC<AdminLayoutProps> = (props) => {
   return (
     <LoadingProvider>
       <ConfirmationProvider>
-        <SearchProvider>
-          <SearchDataProvider>
-            <AdminLayoutContent {...props} />
-          </SearchDataProvider>
-        </SearchProvider>
+        <NotificationProvider>
+          <SearchProvider>
+            <SearchDataProvider>
+              <AdminLayoutContent {...props} />
+            </SearchDataProvider>
+          </SearchProvider>
+        </NotificationProvider>
       </ConfirmationProvider>
     </LoadingProvider>
   );

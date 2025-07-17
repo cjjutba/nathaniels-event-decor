@@ -62,6 +62,8 @@ import { HighlightableCard } from '@/components/ui/highlightable-card';
 import { useAdminActions } from '@/hooks/useAdminActions';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDataInitialization } from '@/hooks/useDataInitialization';
+import { useNotificationContext } from '@/contexts/NotificationContext';
+import { createPortfolioNotifications } from '@/utils/notificationHelpers';
 import {
   weddingPortfolio,
   birthdayPortfolio,
@@ -97,6 +99,7 @@ interface FilterState {
 
 export const AdminPortfolioPage: React.FC = () => {
   const { toast } = useToast();
+  const { addNotification } = useNotificationContext();
   const adminActions = useAdminActions({
     entityName: 'portfolio item',
     entityDisplayName: 'Portfolio Item'
@@ -321,6 +324,11 @@ export const AdminPortfolioPage: React.FC = () => {
 
   // Action handlers
   const updateItemStatus = (id: string, newStatus: PortfolioItem['status']) => {
+    const item = portfolioItems.find(i => i.id === id);
+    if (!item) return;
+
+    const oldStatus = item.status;
+
     adminActions.handleStatusChange(
       id,
       newStatus,
@@ -328,24 +336,41 @@ export const AdminPortfolioPage: React.FC = () => {
       setPortfolioItems,
       (item) => item.title
     );
+
+    // Add notification for status change
+    addNotification(createPortfolioNotifications.updated(item.title, item.id));
   };
 
   const toggleFeatured = (id: string) => {
+    const item = portfolioItems.find(i => i.id === id);
+    if (!item) return;
+
     adminActions.handleFeatureToggle(
       id,
       portfolioItems,
       setPortfolioItems,
       (item) => item.title
     );
+
+    // Add notification for feature toggle
+    if (!item.featured) {
+      addNotification(createPortfolioNotifications.featured(item.title, item.id));
+    }
   };
 
   const deleteItem = (id: string) => {
+    const item = portfolioItems.find(i => i.id === id);
+    if (!item) return;
+
     adminActions.handleDelete(
       id,
       portfolioItems,
       setPortfolioItems,
       (item) => item.title
     );
+
+    // Add notification for deletion
+    addNotification(createPortfolioNotifications.deleted(item.title, item.id));
   };
 
   const createItem = () => {
@@ -376,6 +401,9 @@ export const AdminPortfolioPage: React.FC = () => {
     };
 
     setPortfolioItems(prev => [newItem, ...prev]);
+
+    // Add notification for creation
+    addNotification(createPortfolioNotifications.created(newItem.title, newItem.id));
 
     // Reset form
     setNewItemForm({

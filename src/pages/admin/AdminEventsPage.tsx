@@ -29,6 +29,8 @@ import { HighlightableCard } from '@/components/ui/highlightable-card';
 import { useDeleteConfirmation, useStatusChangeConfirmation } from '@/contexts/ConfirmationContext';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDataInitialization } from '@/hooks/useDataInitialization';
+import { useNotificationContext } from '@/contexts/NotificationContext';
+import { createEventNotifications } from '@/utils/notificationHelpers';
 import {
   CalendarDays,
   Search,
@@ -84,6 +86,7 @@ interface FilterState {
 
 export const AdminEventsPage: React.FC = () => {
   const { toast } = useToast();
+  const { addNotification } = useNotificationContext();
   const confirmDelete = useDeleteConfirmation();
   const confirmStatusChange = useStatusChangeConfirmation();
   const [searchQuery, setSearchQuery] = useState('');
@@ -326,10 +329,20 @@ export const AdminEventsPage: React.FC = () => {
     const confirmed = await confirmStatusChange(event.title, newStatus);
     if (!confirmed) return;
 
+    const oldStatus = event.status;
+
     setEvents(prev => prev.map(event =>
       event.id === id
         ? { ...event, status: newStatus, lastUpdated: new Date().toISOString() }
         : event
+    ));
+
+    // Add notification for status change
+    addNotification(createEventNotifications.statusChanged(
+      event.title,
+      oldStatus,
+      newStatus,
+      event.id
     ));
 
     toast({
@@ -351,6 +364,9 @@ export const AdminEventsPage: React.FC = () => {
     if (!confirmed) return;
 
     setEvents(prev => prev.filter(event => event.id !== id));
+
+    // Add notification for deletion
+    addNotification(createEventNotifications.deleted(event.title, event.id));
 
     toast({
       title: "Event Deleted",
@@ -387,6 +403,13 @@ export const AdminEventsPage: React.FC = () => {
     };
 
     setEvents(prev => [newEvent, ...prev]);
+
+    // Add notification for creation
+    addNotification(createEventNotifications.created(
+      newEvent.title,
+      newEvent.clientName,
+      newEvent.id
+    ));
 
     // Reset form
     setNewEventForm({

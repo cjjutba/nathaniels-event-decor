@@ -23,6 +23,7 @@ import { useAdminSidebar } from '@/hooks/useSidebar';
 import { NotificationsModal } from './NotificationsModal';
 import { GlobalSearchModal } from './GlobalSearchModal';
 import { useSearch } from '@/contexts/SearchContext';
+import { useNotificationContext } from '@/contexts/NotificationContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -54,53 +55,42 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   } = useSearch();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // Sample notification data for the dropdown preview
-  const [notifications, setNotifications] = useState([
-    {
-      id: '1',
-      title: 'New inquiry received',
-      description: 'Wedding planning request from Sarah Johnson',
-      isRead: false,
-      time: '2 hours ago'
-    },
-    {
-      id: '2',
-      title: 'Event confirmed',
-      description: 'Birthday party for next weekend',
-      isRead: false,
-      time: '4 hours ago'
-    },
-    {
-      id: '3',
-      title: 'Portfolio updated',
-      description: 'New images added to gallery',
-      isRead: true,
-      time: '1 day ago'
-    }
-  ]);
+  // Use real notification system
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    deleteNotification
+  } = useNotificationContext();
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === id ? { ...notif, isRead: true } : notif
-      )
-    );
+  const handleMarkAsRead = (id: string) => {
+    markAsRead(id);
     toast({
       title: "Notification Read",
       description: "Notification marked as read",
     });
   };
 
-  const deleteNotification = (id: string) => {
+  const handleDeleteNotification = (id: string) => {
     const notification = notifications.find(n => n.id === id);
-    setNotifications(prev => prev.filter(notif => notif.id !== id));
+    deleteNotification(id);
     toast({
       title: "Notification Deleted",
       description: `"${notification?.title}" deleted successfully`,
     });
   };
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
+  // Helper function to format timestamp
+  const formatNotificationTime = (timestamp: string) => {
+    const now = new Date();
+    const notificationTime = new Date(timestamp);
+    const diffInMinutes = Math.floor((now.getTime() - notificationTime.getTime()) / (1000 * 60));
+
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  };
 
   return (
     <>
@@ -215,10 +205,10 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                               )}
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 truncate">
-                              {notification.description}
+                              {notification.message}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              {notification.time}
+                              {formatNotificationTime(notification.timestamp)}
                             </p>
                           </div>
 
@@ -235,7 +225,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="w-40">
                               <DropdownMenuItem
-                                onClick={() => markAsRead(notification.id)}
+                                onClick={() => handleMarkAsRead(notification.id)}
                                 disabled={notification.isRead}
                               >
                                 <CheckCircle className="h-3 w-3 mr-2" />
@@ -246,7 +236,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
                                 View details
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => deleteNotification(notification.id)}
+                                onClick={() => handleDeleteNotification(notification.id)}
                                 className="text-destructive focus:text-destructive"
                               >
                                 <Trash2 className="h-3 w-3 mr-2" />

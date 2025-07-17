@@ -53,6 +53,8 @@ import { HighlightableCard } from '@/components/ui/highlightable-card';
 import { useDeleteConfirmation, useStatusChangeConfirmation, useArchiveConfirmation } from '@/contexts/ConfirmationContext';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDataInitialization } from '@/hooks/useDataInitialization';
+import { useNotificationContext } from '@/contexts/NotificationContext';
+import { createInquiryNotifications } from '@/utils/notificationHelpers';
 
 interface Inquiry {
   id: string;
@@ -77,6 +79,7 @@ interface FilterState {
 
 export const AdminInquiriesPage: React.FC = () => {
   const { toast } = useToast();
+  const { addNotification } = useNotificationContext();
   const confirmDelete = useDeleteConfirmation();
   const confirmStatusChange = useStatusChangeConfirmation();
   const confirmArchive = useArchiveConfirmation();
@@ -285,6 +288,8 @@ export const AdminInquiriesPage: React.FC = () => {
     const inquiry = inquiries.find(i => i.id === id);
     if (!inquiry) return;
 
+    const oldStatus = inquiry.status;
+
     // Special handling for archive status
     if (newStatus === 'archived') {
       const confirmed = await confirmArchive(`${inquiry.clientName}'s inquiry`);
@@ -299,6 +304,21 @@ export const AdminInquiriesPage: React.FC = () => {
         ? { ...inquiry, status: newStatus, lastUpdated: new Date().toISOString() }
         : inquiry
     ));
+
+    // Add notification based on status change
+    if (newStatus === 'archived') {
+      addNotification(createInquiryNotifications.archived(
+        `${inquiry.clientName}'s inquiry`,
+        inquiry.id
+      ));
+    } else {
+      addNotification(createInquiryNotifications.statusChanged(
+        `${inquiry.clientName}'s inquiry`,
+        oldStatus,
+        newStatus,
+        inquiry.id
+      ));
+    }
 
     toast({
       title: "Status Updated",
@@ -321,6 +341,12 @@ export const AdminInquiriesPage: React.FC = () => {
 
     console.log('Deleting inquiry...');
     setInquiries(prev => prev.filter(inquiry => inquiry.id !== id));
+
+    // Add notification for deletion
+    addNotification(createInquiryNotifications.deleted(
+      `${inquiry.clientName}'s inquiry`,
+      inquiry.id
+    ));
 
     toast({
       title: "Inquiry Deleted",
