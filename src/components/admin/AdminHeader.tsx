@@ -15,11 +15,14 @@ import {
   Trash2,
   MoreHorizontal,
   CheckCircle,
-  Eye
+  Eye,
+  Command
 } from 'lucide-react';
 import { PATHS } from '@/lib/constants';
 import { useAdminSidebar } from '@/hooks/useSidebar';
 import { NotificationsModal } from './NotificationsModal';
+import { GlobalSearchModal } from './GlobalSearchModal';
+import { useSearch } from '@/contexts/SearchContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,7 +46,12 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
   const { isCollapsed } = useAdminSidebar();
   const { toast } = useToast();
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    globalSearchQuery,
+    setGlobalSearchQuery,
+    setIsSearchModalOpen,
+    getSuggestions
+  } = useSearch();
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   // Sample notification data for the dropdown preview
@@ -116,15 +124,36 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              className={`pl-10 w-64 transition-all duration-200 ${
+              placeholder="Search... (Ctrl+K)"
+              value={globalSearchQuery}
+              onChange={(e) => {
+                setGlobalSearchQuery(e.target.value);
+                if (e.target.value.trim()) {
+                  getSuggestions(e.target.value);
+                }
+              }}
+              onFocus={() => {
+                setIsSearchFocused(true);
+                setIsSearchModalOpen(true);
+              }}
+              onKeyDown={(e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                  e.preventDefault();
+                  setIsSearchModalOpen(true);
+                }
+              }}
+              className={`pl-10 pr-20 w-64 transition-all duration-200 cursor-pointer ${
                 isSearchFocused ? 'ring-2 ring-primary/20' : ''
               }`}
+              readOnly
+              onClick={() => setIsSearchModalOpen(true)}
             />
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+              <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">
+                <Command className="h-2.5 w-2.5 inline mr-0.5" />
+                K
+              </kbd>
+            </div>
           </div>
         </div>
 
@@ -296,6 +325,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({
       isOpen={isNotificationsModalOpen}
       onClose={() => setIsNotificationsModalOpen(false)}
     />
+
+    <GlobalSearchModal navigate={navigate} />
   </>
   );
 };

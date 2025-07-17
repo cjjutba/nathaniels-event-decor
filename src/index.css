@@ -111,3 +111,24 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  /* Search highlighting styles */
+  mark {
+    @apply bg-primary/20 text-primary font-medium px-0.5 rounded-sm;
+  }
+
+  .dark mark {
+    @apply bg-primary/30 text-primary-foreground;
+  }
+
+  /* Smooth transitions for search modal */
+  .search-modal-content {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  /* Prevent layout shift during search */
+  .search-results-container {
+    @apply min-h-96;
+  }
+}

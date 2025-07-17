@@ -12,6 +12,7 @@ export const PATHS = {
   // Admin paths
   ADMIN_LOGIN: '/admin',
   ADMIN_DASHBOARD: '/admin/dashboard/',
+  ADMIN_SEARCH: '/admin/dashboard/search/',
   ADMIN_INQUIRIES: '/admin/dashboard/inquiries/',
   ADMIN_EVENTS: '/admin/dashboard/events/',
   ADMIN_SERVICES: '/admin/dashboard/services/',
