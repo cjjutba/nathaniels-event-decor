@@ -86,8 +86,9 @@ export const AppComponent: React.FC = () => {
         return <AdminLoginPage navigate={navigate} />;
       }
       
-      // Render admin page content based on current path
-      switch (currentPage) {
+      // Render admin page content based on current path (handle query parameters)
+      const basePath = currentPage.split('?')[0]; // Remove query parameters for routing
+      switch (basePath) {
         case PATHS.ADMIN_DASHBOARD:
           return <AdminDashboardPage navigate={navigate} />;
         case PATHS.ADMIN_INQUIRIES:

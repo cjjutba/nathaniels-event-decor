@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { HighlightableCard } from '@/components/ui/highlightable-card';
 import {
   Users,
   Search,
@@ -104,6 +105,41 @@ export const AdminClientsPage: React.FC = () => {
     locations: [],
     spendingRange: 'all'
   });
+
+  // URL parameter handling for search highlighting
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const highlightId = urlParams.get('highlight');
+
+    if (highlightId) {
+      setHighlightedItemId(highlightId);
+
+      // Scroll to highlighted item after a short delay to ensure rendering
+      setTimeout(() => {
+        const element = document.querySelector(`[data-item-id="${highlightId}"]`);
+        if (element && containerRef.current) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, 100);
+
+      // Clear highlight after 3 seconds
+      setTimeout(() => {
+        setHighlightedItemId(null);
+        // Remove highlight parameter from URL
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('highlight');
+        window.history.replaceState({}, '', newUrl.toString());
+      }, 3000);
+    }
+  }, []);
+
+  const isHighlighted = (itemId: string) => highlightedItemId === itemId;
 
   // Sample client data based on the events and inquiries
   const [clients, setClients] = useState<Client[]>([
@@ -419,7 +455,7 @@ export const AdminClientsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 p-6">
+    <div ref={containerRef} className="space-y-8 p-6 overflow-auto">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-foreground">Client Accounts</h1>
@@ -725,7 +761,12 @@ export const AdminClientsPage: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {filteredClients.map((client) => (
-                    <Card key={client.id} className="hover:shadow-md transition-shadow">
+                    <HighlightableCard
+                      key={client.id}
+                      itemId={client.id}
+                      isHighlighted={isHighlighted(client.id)}
+                    >
+                      <Card className="hover:shadow-md transition-shadow">
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 space-y-4">
@@ -886,7 +927,8 @@ export const AdminClientsPage: React.FC = () => {
                           </div>
                         </div>
                       </CardContent>
-                    </Card>
+                      </Card>
+                    </HighlightableCard>
                   ))}
                 </div>
               )}

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SearchResult } from '@/lib/searchUtils';
 import { PATHS } from '@/lib/constants';
+import { useLoading } from '@/contexts/LoadingContext';
 import {
   CalendarDays,
   Package,
@@ -34,6 +35,7 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({
   navigate,
   onClose
 }) => {
+  const { showLoading, hideLoading } = useLoading();
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'event':
@@ -131,10 +133,31 @@ export const SearchResultCard: React.FC<SearchResultCardProps> = ({
     }
   };
 
-  const handleNavigate = () => {
-    const path = getNavigationPath(result.type);
-    navigate(path);
-    onClose?.();
+  const handleNavigate = async () => {
+    try {
+      // Show loading with specific message
+      const typeLabel = result.type.charAt(0).toUpperCase() + result.type.slice(1);
+      showLoading(`Navigating to ${typeLabel}...`);
+
+      // Close search modal first
+      onClose?.();
+
+      // Small delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Navigate to the page with highlight
+      const basePath = getNavigationPath(result.type);
+      const pathWithHighlight = `${basePath}?highlight=${result.id}`;
+      navigate(pathWithHighlight);
+
+      // Hide loading after navigation
+      setTimeout(() => {
+        hideLoading();
+      }, 500);
+    } catch (error) {
+      console.error('Navigation error:', error);
+      hideLoading();
+    }
   };
 
   const TypeIcon = getTypeIcon(result.type);

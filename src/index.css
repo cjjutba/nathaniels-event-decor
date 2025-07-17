@@ -131,4 +131,20 @@ All colors MUST be HSL.
   .search-results-container {
     @apply min-h-96;
   }
+
+  /* Highlight animation for search results */
+  @keyframes pulse-highlight {
+    0%, 100% {
+      transform: scale(1.02);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.025);
+      opacity: 0.95;
+    }
+  }
+
+  .animate-pulse-highlight {
+    animation: pulse-highlight 2s ease-in-out 3;
+  }
 }

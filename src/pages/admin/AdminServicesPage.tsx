@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
+import { useHighlight, useScrollToHighlight } from "@/hooks/useHighlight";
+import { HighlightableCard } from "@/components/common/HighlightableCard";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -94,6 +96,11 @@ export const AdminServicesPage: React.FC = () => {
     statuses: [],
     priceRange: 'all'
   });
+
+  // Highlighting functionality
+  const { highlightedId, isHighlighted } = useHighlight();
+  const containerRef = useRef<HTMLDivElement>(null);
+  useScrollToHighlight(highlightedId, containerRef);
 
   // Sample service data based on the client services
   const [services, setServices] = useState<Service[]>([
@@ -366,7 +373,7 @@ export const AdminServicesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 p-6">
+    <div ref={containerRef} className="space-y-8 p-6 overflow-auto">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-foreground">Manage Services</h1>
@@ -673,7 +680,12 @@ export const AdminServicesPage: React.FC = () => {
                   {filteredServices.map((service) => {
                     const ServiceIcon = getServiceIcon(service.icon);
                     return (
-                      <Card key={service.id} className="hover:shadow-md transition-shadow group">
+                      <HighlightableCard
+                        key={service.id}
+                        itemId={service.id}
+                        isHighlighted={isHighlighted(service.id)}
+                      >
+                        <Card className="hover:shadow-md transition-shadow group">
                         <div className="relative">
                           <div className="h-48 bg-gradient-to-br from-primary/10 to-primary/5 rounded-t-lg flex items-center justify-center">
                             <ServiceIcon className="h-16 w-16 text-primary" />
@@ -839,7 +851,8 @@ export const AdminServicesPage: React.FC = () => {
                             </DropdownMenu>
                           </div>
                         </CardContent>
-                      </Card>
+                        </Card>
+                      </HighlightableCard>
                     );
                   })}
                 </div>

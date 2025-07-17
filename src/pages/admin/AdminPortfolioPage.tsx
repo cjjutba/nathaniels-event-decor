@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +58,7 @@ import {
   Share,
   Settings,
 } from 'lucide-react';
+import { HighlightableCard } from '@/components/ui/highlightable-card';
 import {
   weddingPortfolio,
   birthdayPortfolio,
@@ -107,6 +108,41 @@ export const AdminPortfolioPage: React.FC = () => {
     tags: [],
     featured: null
   });
+
+  // URL parameter handling for search highlighting
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const highlightId = urlParams.get('highlight');
+
+    if (highlightId) {
+      setHighlightedItemId(highlightId);
+
+      // Scroll to highlighted item after a short delay to ensure rendering
+      setTimeout(() => {
+        const element = document.querySelector(`[data-item-id="${highlightId}"]`);
+        if (element && containerRef.current) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, 100);
+
+      // Clear highlight after 3 seconds
+      setTimeout(() => {
+        setHighlightedItemId(null);
+        // Remove highlight parameter from URL
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('highlight');
+        window.history.replaceState({}, '', newUrl.toString());
+      }, 3000);
+    }
+  }, []);
+
+  const isHighlighted = (itemId: string) => highlightedItemId === itemId;
 
   // Sample portfolio data based on the client portfolio
   const [portfolioItems, setPortfolioItems] = useState<PortfolioItem[]>([
@@ -406,7 +442,7 @@ export const AdminPortfolioPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 p-6">
+    <div ref={containerRef} className="space-y-8 p-6 overflow-auto">
       {/* Header */}
       <div className="space-y-2">
         <h1 className="text-3xl font-bold text-foreground">Manage Portfolio</h1>
@@ -719,7 +755,12 @@ export const AdminPortfolioPage: React.FC = () => {
                   {filteredItems.map((item) => {
                     const CategoryIcon = getCategoryIcon(item.category);
                     return (
-                      <Card key={item.id} className="hover:shadow-md transition-shadow group overflow-hidden">
+                      <HighlightableCard
+                        key={item.id}
+                        itemId={item.id}
+                        isHighlighted={isHighlighted(item.id)}
+                      >
+                        <Card className="hover:shadow-md transition-shadow group overflow-hidden">
                         <div className="relative">
                           <div className="aspect-square overflow-hidden">
                             <img
@@ -846,6 +887,7 @@ export const AdminPortfolioPage: React.FC = () => {
                           </div>
                         </CardContent>
                       </Card>
+                      </HighlightableCard>
                     );
                   })}
                 </div>
