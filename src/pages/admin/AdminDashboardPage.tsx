@@ -2,6 +2,14 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import {
   ClipboardList,
   CalendarDays,
@@ -14,6 +22,10 @@ import {
   Plus,
   Eye,
   MoreHorizontal,
+  Edit,
+  CheckCircle,
+  Clock,
+  Trash2,
 } from 'lucide-react';
 import { PATHS } from '@/lib/constants';
 import { RecentActivitiesModal } from '@/components/admin/RecentActivitiesModal';
@@ -24,6 +36,71 @@ interface AdminDashboardPageProps {
 
 export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate }) => {
   const [isActivitiesModalOpen, setIsActivitiesModalOpen] = useState(false);
+  const [upcomingEvents, setUpcomingEvents] = useState([
+    {
+      id: '1',
+      title: 'Johnson Wedding',
+      date: 'Dec 15, 2024',
+      time: '4:00 PM',
+      status: 'confirmed' as const,
+      client: 'Sarah & Mike Johnson'
+    },
+    {
+      id: '2',
+      title: 'Corporate Gala',
+      date: 'Dec 18, 2024',
+      time: '7:00 PM',
+      status: 'planning' as const,
+      client: 'TechCorp Inc.'
+    },
+    {
+      id: '3',
+      title: 'Birthday Celebration',
+      date: 'Dec 20, 2024',
+      time: '2:00 PM',
+      status: 'confirmed' as const,
+      client: 'Maria Rodriguez'
+    },
+  ]);
+  const { toast } = useToast();
+
+  // CRUD operation handlers
+  const updateEventStatus = (id: string, newStatus: 'confirmed' | 'planning' | 'in-progress' | 'completed') => {
+    setUpcomingEvents(prev => prev.map(event =>
+      event.id === id ? { ...event, status: newStatus } : event
+    ));
+
+    toast({
+      title: "Status Updated",
+      description: `Event status changed to ${newStatus}`,
+    });
+  };
+
+  const deleteEvent = (id: string) => {
+    const event = upcomingEvents.find(e => e.id === id);
+    setUpcomingEvents(prev => prev.filter(event => event.id !== id));
+
+    toast({
+      title: "Event Deleted",
+      description: `"${event?.title}" has been deleted`,
+    });
+  };
+
+  const viewEventDetails = (event: typeof upcomingEvents[0]) => {
+    toast({
+      title: "View Details",
+      description: `Opening details for "${event.title}"`,
+    });
+    // In a real app, this would open a modal or navigate to details page
+  };
+
+  const editEvent = (event: typeof upcomingEvents[0]) => {
+    toast({
+      title: "Edit Event",
+      description: `Opening edit form for "${event.title}"`,
+    });
+    // In a real app, this would open an edit modal or navigate to edit page
+  };
 
   const stats = [
     {
@@ -124,30 +201,6 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
       path: PATHS.ADMIN_PORTFOLIO,
       description: 'Add new project images',
       color: 'bg-purple-600 text-white hover:bg-purple-700'
-    },
-  ];
-
-  const upcomingEvents = [
-    {
-      title: 'Johnson Wedding',
-      date: 'Dec 15, 2024',
-      time: '4:00 PM',
-      status: 'confirmed',
-      client: 'Sarah & Mike Johnson'
-    },
-    {
-      title: 'Corporate Gala',
-      date: 'Dec 18, 2024',
-      time: '7:00 PM',
-      status: 'planning',
-      client: 'TechCorp Inc.'
-    },
-    {
-      title: 'Birthday Celebration',
-      date: 'Dec 20, 2024',
-      time: '2:00 PM',
-      status: 'confirmed',
-      client: 'Maria Rodriguez'
     },
   ];
 
@@ -291,9 +344,53 @@ export const AdminDashboardPage: React.FC<AdminDashboardPageProps> = ({ navigate
                   <Badge variant={event.status === 'confirmed' ? 'default' : 'secondary'}>
                     {event.status}
                   </Badge>
-                  <Button variant="ghost" size="sm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => viewEventDetails(event)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        View Details
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => editEvent(event)}>
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit Event
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => updateEventStatus(event.id, 'confirmed')}
+                        disabled={event.status === 'confirmed'}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark Confirmed
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => updateEventStatus(event.id, 'in-progress')}
+                        disabled={event.status === 'in-progress'}
+                      >
+                        <Clock className="h-4 w-4 mr-2" />
+                        Mark In Progress
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => updateEventStatus(event.id, 'completed')}
+                        disabled={event.status === 'completed'}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Mark Completed
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => deleteEvent(event.id)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             ))}
