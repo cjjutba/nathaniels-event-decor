@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Heart,
   Cake,
+  Gift,
   Building2,
   ArrowRight,
   Star,
@@ -15,8 +16,14 @@ import {
   PartyPopper,
   Crown,
   Briefcase,
+  Sparkles,
 } from 'lucide-react';
-import { heroImage } from '@/assets/images';
+import {
+  weddingPortfolio,
+  birthdayPortfolio,
+  corporatePortfolio,
+  heroImage
+} from '@/assets/images';
 import { PATHS } from '@/lib/constants';
 import { useAdminServices, useAdminPortfolio, useAdminStats, useAdminClients, useAdminEvents } from '@/hooks/useAdminData';
 
@@ -36,13 +43,70 @@ export const HomePage: React.FC<HomePageProps> = ({ navigate }) => {
     const iconMap: { [key: string]: React.ComponentType<{ className?: string }> } = {
       'Heart': Heart,
       'Cake': Cake,
+      'Gift': Gift,
       'Building2': Building2,
       'PartyPopper': PartyPopper,
       'Crown': Crown,
       'Briefcase': Briefcase,
+      'Sparkles': Sparkles,
     };
     return iconMap[iconName] || Heart;
   };
+
+  // Fallback services if admin data is empty
+  const fallbackServices = [
+    {
+      id: 'fallback-1',
+      title: 'Wedding Planning & Decor',
+      description: 'Complete wedding planning and decor services including venue styling, floral arrangements, lighting design, and coordination to make your special day absolutely perfect.',
+      category: 'Wedding',
+      status: 'active' as const,
+      basePrice: '₱80,000',
+      features: ['Ceremony & Reception Decor', 'Floral Design', 'Lighting & Ambiance', 'Day-of Coordination'],
+      icon: 'Heart',
+      image: weddingPortfolio,
+      popularity: 95,
+      totalBookings: 45,
+      averageRating: 4.9,
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    },
+    {
+      id: 'fallback-2',
+      title: 'Birthday Celebrations',
+      description: 'Fun and memorable birthday party planning with custom themes, decorations, entertainment coordination, and party favors for all ages.',
+      category: 'Birthday',
+      status: 'active' as const,
+      basePrice: '₱35,000',
+      features: ['Custom Theme Design', 'Balloon Decorations', 'Party Games & Activities', 'Entertainment Setup'],
+      icon: 'Gift',
+      image: birthdayPortfolio,
+      popularity: 88,
+      totalBookings: 32,
+      averageRating: 4.7,
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    },
+    {
+      id: 'fallback-3',
+      title: 'Corporate Events',
+      description: 'Professional corporate event services including conferences, product launches, team building events, and company celebrations with sophisticated styling.',
+      category: 'Corporate',
+      status: 'active' as const,
+      basePrice: '₱60,000',
+      features: ['Brand Integration', 'Professional Staging', 'Tech Setup', 'Networking Areas'],
+      icon: 'Building2',
+      image: corporatePortfolio,
+      popularity: 82,
+      totalBookings: 28,
+      averageRating: 4.8,
+      createdAt: new Date().toISOString(),
+      lastUpdated: new Date().toISOString()
+    }
+  ];
+
+  // Use admin services or fallback with safe checks
+  const displayServices = (featuredServices && featuredServices.length > 0) ? featuredServices : fallbackServices;
 
   return (
     <div className="animate-fade-in">
@@ -149,10 +213,10 @@ export const HomePage: React.FC<HomePageProps> = ({ navigate }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredServices.slice(0, 6).map((service) => {
+            {displayServices.slice(0, 6).map((service) => {
               const IconComponent = getServiceIcon(service.icon);
               return (
-                <Card key={service.id} className="group hover:shadow-hover transition-all duration-300 cursor-pointer">
+                <Card key={service.id} className="group hover:shadow-hover transition-all duration-300 cursor-pointer h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden rounded-t-lg">
                     <img
                       src={service.image}
@@ -163,7 +227,7 @@ export const HomePage: React.FC<HomePageProps> = ({ navigate }) => {
                       ⭐ {service.averageRating.toFixed(1)}
                     </div>
                   </div>
-                  <CardHeader>
+                  <CardHeader className="flex-grow">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
                         <IconComponent className="h-6 w-6 text-primary" />
@@ -185,7 +249,7 @@ export const HomePage: React.FC<HomePageProps> = ({ navigate }) => {
                       ))}
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="mt-auto">
                     <div className="flex items-center justify-between mb-4">
                       <span className="text-lg font-semibold text-primary">{service.basePrice}</span>
                       <span className="text-sm text-muted-foreground">{service.totalBookings} bookings</span>
@@ -203,12 +267,6 @@ export const HomePage: React.FC<HomePageProps> = ({ navigate }) => {
               );
             })}
           </div>
-
-          {featuredServices.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No services available at the moment.</p>
-            </div>
-          )}
         </div>
       </section>
 
