@@ -13,7 +13,7 @@
 **Repository:** [https://github.com/cjjutba/nathaniels-event-decor](https://github.com/cjjutba/nathaniels-event-decor)
 
 <div align="center">
-  <a href="https://nathaniel-event-decor.vercel.app/" target="_blank">
+  <a href="https://nathaniels-event-decor.vercel.app/" target="_blank">
     <img src="public/images/client-banner.png" alt="Nathaniel's Event & Decor - Client Interface" width="100%" />
   </a>
 </div>
@@ -39,7 +39,7 @@
 - **Analytics Dashboard**: View business metrics, popular services, and client statistics
 
 <div align="center">
-  <a href="https://nathaniel-event-decor.vercel.app/admin/dashboard" target="_blank">
+  <a href="https://nathaniels-event-decor.vercel.app/admin/dashboard" target="_blank">
     <img src="public/images/admin-dashboard.png" alt="Admin Dashboard Interface" width="100%" />
   </a>
 </div>

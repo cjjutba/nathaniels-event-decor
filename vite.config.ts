@@ -42,76 +42,30 @@ export default defineConfig(({ mode }) => ({
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
-            if (id.includes('@radix-ui')) {
-              return 'ui-vendor';
-            }
-            if (id.includes('lucide-react') || id.includes('clsx') || id.includes('tailwind-merge')) {
-              return 'utils-vendor';
-            }
-            if (id.includes('@tanstack/react-query')) {
-              return 'query-vendor';
-            }
-            return 'vendor';
-          }
-
-          // Admin pages
-          if (id.includes('/pages/admin/')) {
-            return 'admin-pages';
-          }
-
-          // Client pages
-          if (id.includes('/pages/client/')) {
-            return 'client-pages';
-          }
-
-          // Hooks and utilities
-          if (id.includes('/hooks/') || id.includes('/utils/')) {
-            return 'utils';
-          }
-
-          // Components
-          if (id.includes('/components/')) {
-            return 'components';
-          }
-        },
-        // Optimize asset file names
-        assetFileNames: (assetInfo) => {
-          const info = assetInfo.name.split('.');
-          const ext = info[info.length - 1];
-          if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(ext)) {
-            return `assets/images/[name]-[hash][extname]`;
-          }
-          if (/css/i.test(ext)) {
-            return `assets/css/[name]-[hash][extname]`;
-          }
-          return `assets/[name]-[hash][extname]`;
-        },
-        chunkFileNames: 'assets/js/[name]-[hash].js',
-        entryFileNames: 'assets/js/[name]-[hash].js'
+        manualChunks: {
+          // Keep React together to avoid context issues
+          'react-vendor': ['react', 'react-dom'],
+          // UI libraries
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-avatar'
+          ],
+          // Utility libraries
+          'utils-vendor': ['lucide-react', 'clsx', 'tailwind-merge']
+        }
       }
     },
-    // Optimize build
+    // Optimize build but keep it simple
     sourcemap: false,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug']
-      }
-    },
+    minify: 'esbuild', // Use esbuild instead of terser for better compatibility
     // Enable CSS code splitting
     cssCodeSplit: true,
     // Optimize assets
     assetsInlineLimit: 4096, // 4kb
-    // Enable tree shaking
-    target: 'esnext'
+    // Use modern target but ensure compatibility
+    target: 'es2020'
   },
   // Optimize dev dependencies
   optimizeDeps: {
