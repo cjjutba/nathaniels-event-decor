@@ -59,11 +59,13 @@ import {
   Settings,
 } from 'lucide-react';
 import { HighlightableCard } from '@/components/ui/highlightable-card';
+import { ImageUpload } from '@/components/ui/image-upload';
 import { useAdminActions } from '@/hooks/useAdminActions';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useDataInitialization } from '@/hooks/useDataInitialization';
 import { useNotificationContext } from '@/contexts/NotificationContext';
 import { createPortfolioNotifications } from '@/utils/notificationHelpers';
+import { UploadedImage } from '@/hooks/useImageUpload';
 import {
   weddingPortfolio,
   birthdayPortfolio,
@@ -111,13 +113,15 @@ export const AdminPortfolioPage: React.FC = () => {
   const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false);
   const [isEditItemDialogOpen, setIsEditItemDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<PortfolioItem | null>(null);
+  const [editingImages, setEditingImages] = useState<UploadedImage[]>([]);
   const [newItemForm, setNewItemForm] = useState({
     title: '',
     description: '',
     category: '',
     eventDate: '',
     clientName: '',
-    tags: [] as string[]
+    tags: [] as string[],
+    uploadedImages: [] as UploadedImage[]
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
@@ -387,13 +391,18 @@ export const AdminPortfolioPage: React.FC = () => {
       return;
     }
 
+    // Use uploaded image or fallback to placeholder
+    const mainImage = newItemForm.uploadedImages.length > 0
+      ? newItemForm.uploadedImages[0].url
+      : '/images/portfolio-placeholder.jpg';
+
     const newItem: PortfolioItem = {
       id: Date.now().toString(),
       title: newItemForm.title,
       description: newItemForm.description,
       category: newItemForm.category,
       status: 'published',
-      image: '/images/portfolio-placeholder.jpg',
+      image: mainImage,
       tags: newItemForm.tags,
       eventDate: newItemForm.eventDate || new Date().toISOString().split('T')[0],
       clientName: newItemForm.clientName || 'Anonymous',
@@ -416,7 +425,8 @@ export const AdminPortfolioPage: React.FC = () => {
       category: '',
       eventDate: '',
       clientName: '',
-      tags: []
+      tags: [],
+      uploadedImages: []
     });
 
     setIsAddItemDialogOpen(false);
@@ -429,6 +439,7 @@ export const AdminPortfolioPage: React.FC = () => {
 
   const editItem = (item: PortfolioItem) => {
     setEditingItem(item);
+    setEditingImages([]); // Reset editing images
     setIsEditItemDialogOpen(true);
   };
 
@@ -442,6 +453,7 @@ export const AdminPortfolioPage: React.FC = () => {
     const clientNameInput = document.getElementById('editItemClientName') as HTMLInputElement;
     const descriptionTextarea = document.getElementById('editItemDescription') as HTMLTextAreaElement;
     const tagsInput = document.getElementById('editItemTags') as HTMLInputElement;
+    const featuredCheckbox = document.getElementById('editItemFeatured') as HTMLInputElement;
 
     if (!titleInput?.value || !categorySelect?.value || !descriptionTextarea?.value) {
       toast({
@@ -452,6 +464,11 @@ export const AdminPortfolioPage: React.FC = () => {
       return;
     }
 
+    // Use new uploaded image if available, otherwise keep existing
+    const updatedImage = editingImages.length > 0
+      ? editingImages[0].url
+      : editingItem.image;
+
     const updatedItem: PortfolioItem = {
       ...editingItem,
       title: titleInput.value,
@@ -460,6 +477,8 @@ export const AdminPortfolioPage: React.FC = () => {
       clientName: clientNameInput?.value || editingItem.clientName,
       description: descriptionTextarea.value,
       tags: tagsInput?.value ? tagsInput.value.split(',').map(t => t.trim()).filter(t => t) : editingItem.tags,
+      image: updatedImage,
+      featured: featuredCheckbox?.checked || editingItem.featured,
       lastUpdated: new Date().toISOString()
     };
 
@@ -477,6 +496,7 @@ export const AdminPortfolioPage: React.FC = () => {
 
     setIsEditItemDialogOpen(false);
     setEditingItem(null);
+    setEditingImages([]);
   };
 
   return (
@@ -1161,11 +1181,13 @@ export const AdminPortfolioPage: React.FC = () => {
 
             <div className="space-y-2">
               <Label htmlFor="image">Image Upload</Label>
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
-                <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                <p className="text-xs text-muted-foreground">PNG, JPG, GIF up to 10MB</p>
-              </div>
+              <ImageUpload
+                maxFiles={5}
+                maxFileSize={10}
+                onImagesChange={(images) => {
+                  setNewItemForm(prev => ({ ...prev, uploadedImages: images }));
+                }}
+              />
             </div>
 
             <div className="flex items-center justify-end space-x-2 pt-4">
@@ -1201,20 +1223,20 @@ export const AdminPortfolioPage: React.FC = () => {
                 <div className="space-y-2">
                   <Label htmlFor="editItemCategory">Category *</Label>
                   <select id="editItemCategory" defaultValue={editingItem.category} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                    <option value="Wedding">Wedding</option>
+                    <option value="Weddings">Weddings</option>
+                    <option value="Birthdays">Birthdays</option>
                     <option value="Corporate">Corporate</option>
-                    <option value="Birthday">Birthday</option>
-                    <option value="Anniversary">Anniversary</option>
-                    <option value="Other">Other</option>
+                    <option value="Fiestas">Fiestas</option>
+                    <option value="Pageants">Pageants</option>
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="editItemDate">Event Date</Label>
-                  <Input id="editItemDate" type="date" defaultValue={editingItem.eventDate} />
+                  <Label htmlFor="editItemEventDate">Event Date</Label>
+                  <Input id="editItemEventDate" type="date" defaultValue={editingItem.eventDate} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="editItemLocation">Location</Label>
-                  <Input id="editItemLocation" defaultValue={editingItem.location} />
+                  <Label htmlFor="editItemClientName">Client Name</Label>
+                  <Input id="editItemClientName" defaultValue={editingItem.clientName} />
                 </div>
               </div>
 
@@ -1238,8 +1260,31 @@ export const AdminPortfolioPage: React.FC = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="editItemImages">Image Upload</Label>
-                <Input id="editItemImages" type="file" multiple accept="image/*" />
-                <p className="text-xs text-muted-foreground">Upload new images to replace existing ones</p>
+                <div className="space-y-3">
+                  {/* Current Image Preview */}
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Current Image:</p>
+                    <div className="w-32 h-32 rounded-lg overflow-hidden border">
+                      <img
+                        src={editingItem.image}
+                        alt={editingItem.title}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </div>
+
+                  {/* New Image Upload */}
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Upload New Image (optional):</p>
+                    <ImageUpload
+                      maxFiles={1}
+                      maxFileSize={10}
+                      onImagesChange={(images) => {
+                        setEditingImages(images);
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex items-center space-x-2">
