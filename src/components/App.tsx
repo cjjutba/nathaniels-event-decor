@@ -123,7 +123,7 @@ export const AppComponent: React.FC = () => {
       case PATHS.PORTFOLIO:
         return <PortfolioPage navigate={navigate} />;
       case PATHS.CONTACT:
-        return <ContactPage />;
+        return <ContactPage navigate={navigate} />;
       case PATHS.LOGIN:
         return <LoginPage navigate={navigate} />;
       case PATHS.SIGNUP:
@@ -137,9 +137,10 @@ export const AppComponent: React.FC = () => {
 
   // Render the appropriate layout based on the current route
   const renderLayout = () => {
-    // Admin routes don't use the main client layout
-    if (currentPage === PATHS.ADMIN_LOGIN || currentPage.startsWith('/admin/dashboard')) {
-      if (currentPage === PATHS.ADMIN_LOGIN) {
+    // Admin routes and client auth pages don't use the main client layout
+    if (currentPage === PATHS.ADMIN_LOGIN || currentPage.startsWith('/admin/dashboard') ||
+        currentPage === PATHS.LOGIN || currentPage === PATHS.SIGNUP) {
+      if (currentPage === PATHS.ADMIN_LOGIN || currentPage === PATHS.LOGIN || currentPage === PATHS.SIGNUP) {
         return renderPageContent();
       }
       
