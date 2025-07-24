@@ -9,7 +9,7 @@
 
 > **Premium Event Planning & Decor Services** - A modern, responsive web application showcasing professional event planning services with both client-facing and admin management interfaces.
 
-**Live Demo:** [https://nathaniel-event-decor.vercel.app/](https://nathaniel-event-decor.vercel.app/)
+**Live Demo:** [https://nathaniels-event-decor.vercel.app/](https://nathaniels-event-decor.vercel.app/)
 **Repository:** [https://github.com/cjjutba/nathaniels-event-decor](https://github.com/cjjutba/nathaniels-event-decor)
 
 <div align="center">
@@ -39,7 +39,9 @@
 - **Analytics Dashboard**: View business metrics, popular services, and client statistics
 
 <div align="center">
-  <img src="public/images/admin-dashboard.png" alt="Admin Dashboard Interface" width="100%" />
+  <a href="https://nathaniel-event-decor.vercel.app/admin/dashboard" target="_blank">
+    <img src="public/images/admin-dashboard.png" alt="Admin Dashboard Interface" width="100%" />
+  </a>
 </div>
 
 ---
