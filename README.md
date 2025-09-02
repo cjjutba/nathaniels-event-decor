@@ -32,7 +32,7 @@ Nathaniel's Event & Decor is a modern, responsive web application showcasing pre
 
 > **Premium Event Planning & Decor Services** - A professional showcase with comprehensive client and admin functionality.
 
-**Live Demo:** [https://nathaniels-event-decor.vercel.app/](https://nathaniels-event-decor.vercel.app/)
+**Live Demo:** [https://ned.cjjutba.com/](https://ned.cjjutba.com/)
 **Repository:** [https://github.com/cjjutba/nathaniels-event-decor](https://github.com/cjjutba/nathaniels-event-decor)
 
 <div align="center">
@@ -42,7 +42,7 @@ Nathaniel's Event & Decor is a modern, responsive web application showcasing pre
 </div>
 
 ## 🌐 Live Demo
-**Website**: [https://nathaniels-event-decor.vercel.app/](https://nathaniels-event-decor.vercel.app/)
+**Website**: [https://ned.cjjutba.com/](https://ned.cjjutba.com/)
 
 ---
 
